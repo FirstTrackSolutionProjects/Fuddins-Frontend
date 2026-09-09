@@ -1,34 +1,35 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchCategories, fetchProducts, fetchUsers } from './api';
+import { Navigate, NavLink, Outlet, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { fetchCategories, fetchPages, fetchProducts, fetchUsers } from './api';
 import type { AuthResponse } from './auth';
 import AdminPanel from './components/AdminPanel';
 import AdvancedCommerceManager from './components/AdvancedCommerceManager';
+import AccountCommercePanel from './components/AccountCommercePanel';
 import AuthPanel from './components/AuthPanel';
-import CartPanel from './components/CartPanel';
+import AboutPage from './components/AboutPage';
 import CategoryManager from './components/CategoryManager';
+import ContactForm from './components/ContactForm';
+import ContactInbox from './components/ContactInbox';
 import ContentPage from './components/ContentPage';
 import CouponManager from './components/CouponManager';
+import HomePage from './components/HomePage';
+import CareerPage from './components/CareerPage';
+import ApplyShoppingCardPage from './components/ApplyShoppingCardPage';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import MembershipPlansPage from './components/MembershipPlansPage';
+import MenuUploadPage from './components/MenuUploadPage';
+import OnboardingEnquiryPage from './components/OnboardingEnquiryPage';
+// LandingPage import removed
 import OrdersPanel from './components/OrdersPanel';
 import PageManager from './components/PageManager';
+import PartnerOperationsPanel from './components/PartnerOperationsPanel';
+import PartnerPage from './components/PartnerPage';
+import PartnerRegistrationPage from './components/PartnerRegistrationPage';
 import ProductForm from './components/ProductForm';
-import { resolveAssetUrl } from './config';
-import type { CartItem, Category, Product, User } from './types';
-
-const categoryImages: Record<string, string> = {
-  Groceries: '/legacy-uploads/2022/10/Groceries-1-150x150.jpg',
-  Vegetables: '/legacy-uploads/2022/10/Groceries-2-150x150.jpg',
-  Fruits: '/legacy-uploads/2022/10/Groceries-3-150x150.jpg',
-  Dairy: '/legacy-uploads/2022/10/Groceries-4-150x150.jpg',
-  Desserts: '/legacy-uploads/2022/10/FAVOURITE-FOOD-150x150.jpg',
-  Snacks: '/legacy-uploads/2022/10/fast-food-6974507_1920-150x150.jpg',
-  'Food Items': '/legacy-uploads/2022/10/FAVOURITE-FOOD-1-150x150.jpg',
-  'Baby care': '/legacy-uploads/2022/10/Groceries-5-150x150.jpg',
-  'Bakery Corner': '/legacy-uploads/2022/10/Groceries-6-150x150.jpg',
-  Cosmetics: '/legacy-uploads/2022/10/Groceries-8-150x150.jpg',
-  Flower: '/legacy-uploads/2022/10/Groceries-9-150x150.jpg',
-  Footwear: '/legacy-uploads/2022/10/Groceries-10-150x150.jpg',
-  Garments: '/legacy-uploads/2022/10/Groceries-11-150x150.jpg',
-};
+import ShopPage from './components/ShopPage';
+import VendorRegistrationForm from './components/VendorRegistrationForm';
+import type { CartItem, Category, Page, Product, ProductVariation, User } from './types';
 
 const getStoredUser = () => {
   const rawUser = localStorage.getItem('user');
@@ -44,25 +45,78 @@ const getStoredUser = () => {
   }
 };
 
+const preferredPageOrder = ['about', 'contact', 'refer-earn', 'privacy-policy', 'terms-conditions', 'shipping-delivery-policy', 'cancellation-refund-policy'];
+
+const parseVariations = (product: Product): ProductVariation[] => {
+  if (!product.variations) {
+    return [];
+  }
+
+  try {
+    const variations = JSON.parse(product.variations) as ProductVariation[];
+    return Array.isArray(variations) ? variations : [];
+  } catch {
+    return [];
+  }
+};
+
+const cartKey = (product: Product, variation?: ProductVariation | null) => `${product.id}:${variation?.id || 'default'}`;
+
+// Handles all dynamic content pages EXCEPT "about", which has its own dedicated route/component below.
+const ContentRoute = ({ pages }: { pages: Page[] }) => {
+  const { slug = 'contact' } = useParams();
+  const pageExists = pages.some((page) => page.slug === slug);
+  if (!pageExists) return <Navigate to="/" replace />;
+  return <section className="content-view">
+    <div className="page-tabs">
+      {pages.map((page) => <NavLink key={page.slug} className={({ isActive }) => isActive ? 'active' : ''} to={`/pages/${page.slug}`}>{page.title}</NavLink>)}
+    </div>
+    <ContentPage slug={slug} />
+  </section>;
+};
+
+const AdminLayout = () => <section className="admin-section">
+  <div className="admin-heading">
+    <h2>Admin & operations</h2>
+    <p>Manage store operations from separate workspaces.</p>
+  </div>
+  <nav className="admin-nav" aria-label="Admin sections">
+    <NavLink to="/admin/products">Products</NavLink>
+    <NavLink to="/admin/categories">Categories</NavLink>
+    <NavLink to="/admin/orders">Orders</NavLink>
+    <NavLink to="/admin/coupons">Coupons</NavLink>
+    <NavLink to="/admin/commerce">Commerce</NavLink>
+    <NavLink to="/admin/inbox">Inbox</NavLink>
+    <NavLink to="/admin/pages">Pages</NavLink>
+  </nav>
+  <Outlet />
+</section>;
+
 const App = () => {
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(() => getStoredUser());
   const [users, setUsers] = useState<User[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [pages, setPages] = useState<Page[]>([]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedVariations, setSelectedVariations] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [openMenu, setOpenMenu] = useState<'products' | 'partner' | 'about' | null>(null);
 
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'admin_team';
+  const isPartner = Boolean(currentUser && currentUser.role !== 'user');
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [productData, categoryData] = await Promise.all([fetchProducts(), fetchCategories()]);
+      const [productData, categoryData, pageData] = await Promise.all([fetchProducts(), fetchCategories(), fetchPages()]);
       setProducts(productData);
       setCategories(categoryData);
+      setPages(pageData);
       setUsers(isAdmin ? await fetchUsers() : []);
     } catch (error) {
       console.error('Failed to load data', error);
@@ -79,28 +133,42 @@ const App = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setCurrentUser(null);
-    setUsers([]);
-    setEditingProduct(null);
+    navigate('/');
+  };
+
+  const openPage = (slug: string) => {
+    setOpenMenu(null);
+    navigate(`/pages/${slug}`);
+  };
+
+  const openCategory = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setOpenMenu(null);
+    navigate('/shop');
   };
 
   const addToCart = (product: Product) => {
+    const variations = parseVariations(product);
+    const selectedVariationId = selectedVariations[product.id];
+    const variation = variations.find((item) => item.id === selectedVariationId) || variations[0] || null;
+    const key = cartKey(product, variation);
     setCartItems((current) => {
-      const existing = current.find((item) => item.product.id === product.id);
+      const existing = current.find((item) => cartKey(item.product, item.variation) === key);
       if (existing) {
-        return current.map((item) => (item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
+        return current.map((item) => (cartKey(item.product, item.variation) === key ? { ...item, quantity: item.quantity + 1 } : item));
       }
 
-      return [...current, { product, quantity: 1 }];
+      return [...current, { product, variation, quantity: 1 }];
     });
   };
 
-  const updateCartQuantity = (productId: number, quantity: number) => {
+  const updateCartQuantity = (key: string, quantity: number) => {
     if (quantity <= 0) {
-      setCartItems((current) => current.filter((item) => item.product.id !== productId));
+      setCartItems((current) => current.filter((item) => cartKey(item.product, item.variation) !== key));
       return;
     }
 
-    setCartItems((current) => current.map((item) => (item.product.id === productId ? { ...item, quantity } : item)));
+    setCartItems((current) => current.map((item) => (cartKey(item.product, item.variation) === key ? { ...item, quantity } : item)));
   };
 
   const handleDeleteProduct = (productId: number) => {
@@ -108,14 +176,19 @@ const App = () => {
     setCartItems((current) => current.filter((item) => item.product.id !== productId));
   };
 
-  const filteredProducts = useMemo(
+  const visiblePages = useMemo(
     () =>
-      products.filter((product) => {
-        const matchesSearch = product.name.toLowerCase().includes(search.toLowerCase());
-        const matchesCategory = selectedCategory === 'all' || String(product.categoryId) === selectedCategory;
-        return matchesSearch && matchesCategory;
-      }),
-    [products, search, selectedCategory]
+      [...pages]
+        .filter((page) => page.slug !== 'home')
+        .sort((a, b) => {
+          const aIndex = preferredPageOrder.indexOf(a.slug);
+          const bIndex = preferredPageOrder.indexOf(b.slug);
+          if (aIndex !== -1 || bIndex !== -1) {
+            return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+          }
+          return a.title.localeCompare(b.title);
+        }),
+    [pages]
   );
 
   useEffect(() => {
@@ -124,114 +197,59 @@ const App = () => {
 
   return (
     <div className="storefront">
-      <header className="topbar">
-        <div className="topbar-inner">
-          <div className="brand">
-            <img src={resolveAssetUrl('/legacy-uploads/2022/10/FUDDINS-1.png') || ''} alt="Fuddins" />
-            <div>
-              <strong>fuddins.com</strong>
-              <span>Your Comfort Partner</span>
-            </div>
-          </div>
-          <nav>
-            <a href="#home">Home</a>
-            <a href="#shop">Shop</a>
-            <a href="#about">About</a>
-            <a href="#cart">Cart ({cartItems.reduce((sum, item) => sum + item.quantity, 0)})</a>
-          </nav>
-        </div>
-      </header>
+      <Header
+        currentUser={currentUser}
+        categories={categories}
+        isAdmin={isAdmin}
+        isPartner={isPartner}
+        search={search}
+        openMenu={openMenu}
+        onSearchChange={setSearch}
+        onSearchSubmit={() => navigate('/shop')}
+        onToggleMenu={setOpenMenu}
+        onOpenCategory={openCategory}
+      />
 
-      <main id="home">
-        <section className="search-strip">
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search for products" />
-          <button type="button">Search</button>
-        </section>
-
-        <section className="category-row" aria-label="Product categories">
-          {categories.slice(0, 10).map((category) => {
-            const src = resolveAssetUrl(categoryImages[category.name] || '/legacy-uploads/2022/10/FUDDINS-1-150x150.png');
-            return (
-              <button key={category.id} type="button" className={selectedCategory === String(category.id) ? 'category-tile active' : 'category-tile'} onClick={() => setSelectedCategory(String(category.id))}>
-                {src ? <img src={src} alt="" /> : null}
-                <span>{category.name}</span>
-              </button>
-            );
-          })}
-        </section>
-
-        <div className="shop-layout" id="shop">
-          <section className="shop-main">
-            <div className="shop-heading">
-              <h1>Shop</h1>
-              <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)}>
-                <option value="all">All categories</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {loading ? <p className="muted">Loading products...</p> : null}
-            {!loading && filteredProducts.length === 0 ? <p className="muted">No products found.</p> : null}
-
-            <div className="product-grid">
-              {filteredProducts.map((product) => {
-                const imageSrc = resolveAssetUrl(product.imageUrl);
-                return (
-                  <article key={product.id} className="product-card">
-                    <div className="product-image">{imageSrc ? <img src={imageSrc} alt={product.name} /> : <span>No image</span>}</div>
-                    <p className="product-category">{product.category?.name || 'Uncategorized'}</p>
-                    <h2>{product.name}</h2>
-                    <p className="price">Rs. {product.price}</p>
-                    <button type="button" onClick={() => addToCart(product)}>
-                      Add to cart
-                    </button>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-
-          <aside className="shop-side" id="cart">
-            <CartPanel
-              cartItems={cartItems}
-              onClearCart={() => setCartItems([])}
-              onRemoveItem={(productId) => setCartItems((current) => current.filter((item) => item.product.id !== productId))}
-              onUpdateQuantity={updateCartQuantity}
-              onOrderPlaced={loadData}
-            />
-            <div id="about">
-              <ContentPage slug="about" />
-            </div>
-          </aside>
-        </div>
-
-        <section className="account-section">
-          <h2>Account</h2>
-          <AuthPanel currentUser={currentUser} onAuthenticated={handleAuthenticated} onLogout={handleLogout} />
-        </section>
-
-        {isAdmin ? (
-          <section className="admin-section">
-            <div className="admin-heading">
-              <h2>Admin Management</h2>
-              <p>{users.length} users loaded</p>
-            </div>
-            <div className="admin-grid">
-              <ProductForm editingProduct={editingProduct} onProductChanged={loadData} onCancel={() => setEditingProduct(null)} />
-              <CategoryManager categories={categories} onCategoryChanged={loadData} />
-              <CouponManager />
-              <AdvancedCommerceManager />
-              <PageManager />
-              <OrdersPanel />
-              <AdminPanel products={products} onDeleteProduct={handleDeleteProduct} onEditProduct={setEditingProduct} />
-            </div>
-          </section>
-        ) : null}
+      <main>
+        <Routes>
+          <Route path="/" element={<HomePage categories={categories} products={products} onOpenShop={() => navigate('/shop')} onCategorySelect={(categoryId) => { setSelectedCategory(categoryId); navigate('/shop'); }} onAddToCart={addToCart} />} />
+          <Route path="/shop" element={<ShopPage
+            categories={categories} products={products} pages={visiblePages} cartItems={cartItems}
+            search={search} selectedCategory={selectedCategory} selectedVariations={selectedVariations} loading={loading}
+            onSearchChange={setSearch} onCategoryChange={setSelectedCategory}
+            onVariationChange={(productId, variationId) => setSelectedVariations((current) => ({ ...current, [productId]: variationId }))}
+            onAddToCart={addToCart} onClearCart={() => setCartItems([])}
+            onRemoveCartItem={(key) => setCartItems((current) => current.filter((item) => cartKey(item.product, item.variation) !== key))}
+            onUpdateQuantity={updateCartQuantity} onOrderPlaced={loadData} onOpenPage={openPage}
+          />} />
+          <Route path="/pages/about" element={<AboutPage />} />
+          <Route path="/pages/:slug" element={<ContentRoute pages={visiblePages} />} />
+          <Route path="/account" element={<section className="account-section"><h2>Account</h2><AuthPanel currentUser={currentUser} onAuthenticated={handleAuthenticated} onLogout={handleLogout} /><AccountCommercePanel user={currentUser} /></section>} />
+          <Route path="/contact" element={<section className="form-section"><ContactForm />{!currentUser || currentUser.role === 'user' ? <VendorRegistrationForm /> : null}</section>} />
+          <Route path="/partner" element={<PartnerPage />} />
+          <Route path="/partner/membership-plans" element={<MembershipPlansPage />} />
+          <Route path="/partner/register" element={<PartnerRegistrationPage />} />
+          <Route path="/partner/apply-shopping-card" element={<ApplyShoppingCardPage />} />
+          <Route path="/partner/executive-login" element={<Navigate to="/account" replace />} />
+          <Route path="/partner/menu-upload" element={<MenuUploadPage />} />
+          <Route path="/partner/onboarding-enquiry" element={<OnboardingEnquiryPage />} />
+          <Route path="/partner/dashboard" element={isPartner && !isAdmin ? <section className="partner-section"><PartnerOperationsPanel role={currentUser?.role === 'delivery' ? 'delivery' : 'vendor'} user={currentUser!} /></section> : <Navigate to="/account" replace />} />
+          <Route path="/career" element={<CareerPage />} />
+          <Route path="/admin" element={isAdmin ? <AdminLayout /> : <Navigate to="/account" replace />}>
+            <Route index element={<Navigate to="products" replace />} />
+            <Route path="products" element={<div className="admin-grid"><ProductForm editingProduct={editingProduct} onProductChanged={loadData} onCancel={() => setEditingProduct(null)} /><AdminPanel products={products} onDeleteProduct={handleDeleteProduct} onEditProduct={setEditingProduct} /></div>} />
+            <Route path="categories" element={<div className="admin-grid"><CategoryManager categories={categories} onCategoryChanged={loadData} /></div>} />
+            <Route path="orders" element={<div className="admin-grid"><OrdersPanel /></div>} />
+            <Route path="coupons" element={<div className="admin-grid"><CouponManager /></div>} />
+            <Route path="commerce" element={<div className="admin-grid"><AdvancedCommerceManager /></div>} />
+            <Route path="inbox" element={<div className="admin-grid"><ContactInbox /></div>} />
+            <Route path="pages" element={<div className="admin-grid"><PageManager /></div>} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
+
+      <Footer />
     </div>
   );
 };

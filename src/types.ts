@@ -10,6 +10,25 @@ export interface Category {
   name: string;
 }
 
+export interface Page {
+  id: number;
+  slug: string;
+  title: string;
+  content: string;
+}
+
+export interface ProductVariation {
+  id: number;
+  title?: string | null;
+  price?: number | null;
+  regularPrice?: number | null;
+  salePrice?: number | null;
+  sku?: string | null;
+  stockQuantity?: number | null;
+  stockStatus?: string;
+  attributes?: Record<string, string>;
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -32,6 +51,7 @@ export interface Product {
 
 export interface CartItem {
   product: Product;
+  variation?: ProductVariation | null;
   quantity: number;
 }
 

@@ -33,3 +33,26 @@ export async function loginUser(payload: { email: string; password: string }): P
 
   return response.json();
 }
+
+async function authRequest(path: string, payload: Record<string, string>): Promise<AuthResponse | { message: string }> {
+  const response = await fetch(`${API_ORIGIN}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'Authentication request failed');
+  return result;
+}
+
+export async function requestEmailOtp(email: string): Promise<{ message: string }> {
+  return authRequest('/auth/email-otp/request', { email }) as Promise<{ message: string }>;
+}
+
+export async function verifyEmailOtp(email: string, code: string): Promise<AuthResponse> {
+  return authRequest('/auth/email-otp/verify', { email, code }) as Promise<AuthResponse>;
+}
+
+export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
+  return authRequest('/auth/google', { idToken }) as Promise<AuthResponse>;
+}

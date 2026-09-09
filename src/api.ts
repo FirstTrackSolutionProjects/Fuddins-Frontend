@@ -1,6 +1,6 @@
 import { API_BASE_URL, API_ORIGIN } from './config';
 
-function authHeaders() {
+function authHeaders(): Record<string, string> {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -37,6 +37,14 @@ export async function fetchOrders() {
   });
   if (!response.ok) {
     throw new Error('Failed to fetch orders');
+  }
+  return response.json();
+}
+
+export async function fetchPages() {
+  const response = await fetch(`${API_ORIGIN}/pages`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch pages');
   }
   return response.json();
 }

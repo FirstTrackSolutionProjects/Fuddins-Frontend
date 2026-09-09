@@ -1,0 +1,237 @@
+import { NavLink } from 'react-router-dom';
+import type { Category, User } from '../types';
+
+type MenuKey = 'products' | 'partner' | 'about' | null;
+
+interface HeaderProps {
+  currentUser: User | null;
+  categories: Category[];
+  isAdmin: boolean;
+  isPartner: boolean;
+  search: string;
+  openMenu: MenuKey;
+  onSearchChange: (value: string) => void;
+  onSearchSubmit: () => void;
+  onToggleMenu: (menu: MenuKey) => void;
+  onOpenCategory: (categoryId: string) => void;
+}
+
+// Lime-accent link (Home, Refer & Earn, Log In)
+const accentLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `font-medium text-[16px] text-lime-600 hover:text-lime-700 transition-colors ${
+    isActive ? 'text-lime-700' : ''
+  }`;
+
+// Dark link (All Products, Partner, About us)
+const darkLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `font-medium text-[16px] text-neutral-900 hover:text-lime-700 transition-colors ${
+    isActive ? 'text-lime-700' : ''
+  }`;
+
+const dropdownLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `block w-full px-6 py-3 text-left text-sm font-normal text-neutral-700 hover:bg-lime-50 hover:text-lime-700 ${
+    isActive ? 'text-lime-700' : ''
+  }`;
+
+const ChevronIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-3.5 w-3.5"
+  >
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
+// Solid filled basket icon (matches reference screenshot)
+const BasketIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
+    <path d="M7.5 2a.75.75 0 0 0-.6 1.2L9 6.5H4a1 1 0 0 0-.98 1.2l1.7 8.5A2 2 0 0 0 6.68 18h10.64a2 2 0 0 0 1.96-1.8l1.7-8.5A1 1 0 0 0 20 6.5h-5l2.1-3.3A.75.75 0 0 0 16.5 2a.75.75 0 0 0-.6.3L12.8 6.5h-1.6L8.1 2.3A.75.75 0 0 0 7.5 2Z" />
+    <circle cx="8" cy="21" r="1.4" />
+    <circle cx="16" cy="21" r="1.4" />
+  </svg>
+);
+
+const Header = ({
+  currentUser,
+  categories,
+  isAdmin,
+  isPartner,
+  search,
+  openMenu,
+  onSearchChange,
+  onSearchSubmit,
+  onToggleMenu,
+  onOpenCategory,
+}: HeaderProps) => {
+  return (
+    <header className="border-b border-neutral-200 bg-white font-sans">
+      <div className="mx-auto flex min-h-[104px] max-w-[1500px] items-center justify-between gap-6 px-5">
+        <div className="flex items-center gap-3">
+          <img src="/images/cropped-fuddns.webp" alt="Fuddins" className="h-[76px] w-[150px] object-contain" />
+        </div>
+
+        <nav className="flex flex-1 flex-wrap items-center justify-between pl-10">
+          {/* left group */}
+          <div className="flex items-center gap-8">
+            <NavLink to="/" className={accentLinkClass}>
+              Home
+            </NavLink>
+
+            <div className="relative flex items-center gap-1">
+              <NavLink to="/shop" className={darkLinkClass}>
+                All Products
+              </NavLink>
+              <button
+                type="button"
+                aria-label="Open product categories"
+                className="p-0 text-neutral-700"
+                onClick={() => onToggleMenu(openMenu === 'products' ? null : 'products')}
+              >
+                <ChevronIcon />
+              </button>
+              {openMenu === 'products' ? (
+                <div className="absolute left-0 top-8 z-50 min-w-[220px] bg-white py-2.5 shadow-xl">
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      className="block w-full px-6 py-3 text-left text-sm font-normal text-neutral-700 hover:bg-lime-50 hover:text-lime-700"
+                      onClick={() => onOpenCategory(String(category.id))}
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {/* right group */}
+          <div className="flex items-center gap-8">
+            <NavLink to="/pages/refer-earn" className={accentLinkClass}>
+              Refer &amp; Earn
+            </NavLink>
+
+            <div className="relative flex items-center gap-1">
+              <NavLink to="/partner" className={darkLinkClass}>
+                Partner
+              </NavLink>
+              <button
+                type="button"
+                aria-label="Open partner menu"
+                className="p-0 text-neutral-700"
+                onClick={() => onToggleMenu(openMenu === 'partner' ? null : 'partner')}
+              >
+                <ChevronIcon />
+              </button>
+              {openMenu === 'partner' ? (
+                <div className="absolute left-[-16px] top-8 z-50 min-w-[220px] bg-white py-2.5 shadow-xl">
+                  <NavLink to="/partner/apply-shopping-card" className={dropdownLinkClass}>
+                    Apply shopping card
+                  </NavLink>
+                  <NavLink to="/partner/executive-login" className={dropdownLinkClass}>
+                    Executive Login
+                  </NavLink>
+                  <NavLink to="/partner/menu-upload" className={dropdownLinkClass}>
+                    Menu Upload
+                  </NavLink>
+                  <NavLink to="/partner/onboarding-enquiry" className={dropdownLinkClass}>
+                    Onboarding Enquiry
+                  </NavLink>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="relative flex items-center gap-1">
+              <NavLink to="/pages/about" className={darkLinkClass}>
+                About us
+              </NavLink>
+              <button
+                type="button"
+                aria-label="Open About us menu"
+                className="p-0 text-neutral-700"
+                onClick={() => onToggleMenu(openMenu === 'about' ? null : 'about')}
+              >
+                <ChevronIcon />
+              </button>
+              {openMenu === 'about' ? (
+                <div className="absolute left-[-16px] top-8 z-50 min-w-[220px] bg-white py-2.5 shadow-xl">
+                  <NavLink to="/pages/about" className={dropdownLinkClass}>
+                    About
+                  </NavLink>
+                  <NavLink to="/contact" className={dropdownLinkClass}>
+                    Contact
+                  </NavLink>
+                  <NavLink to="/career" className={dropdownLinkClass}>
+                    Career
+                  </NavLink>
+                </div>
+              ) : null}
+            </div>
+
+            <NavLink
+              to="/shop"
+              aria-label="Cart"
+              className="flex items-center justify-center border-2 border-lime-600 p-1.5 text-lime-600"
+            >
+              <BasketIcon />
+            </NavLink>
+
+            <NavLink to="/account" className={accentLinkClass}>
+              {currentUser ? 'Account' : 'Log In'}
+            </NavLink>
+
+            {isPartner && !isAdmin ? (
+              <NavLink to="/partner/dashboard" className={darkLinkClass}>
+                Dashboard
+              </NavLink>
+            ) : null}
+
+            {isAdmin ? (
+              <NavLink to="/admin" className={darkLinkClass}>
+                Admin
+              </NavLink>
+            ) : null}
+          </div>
+        </nav>
+      </div>
+
+      <div className="mx-auto mb-7 max-w-[1100px] px-5">
+        <div className="relative w-full">
+          <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-lime-600">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-5 w-5"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </span>
+          <input
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') onSearchSubmit();
+            }}
+            placeholder="Search for products..."
+            className="w-full rounded-full border-0 bg-neutral-100 py-4 pl-14 pr-5 text-base font-normal outline-none"
+          />
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default Header;
