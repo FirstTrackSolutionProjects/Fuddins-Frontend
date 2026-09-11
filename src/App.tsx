@@ -9,6 +9,7 @@ import AuthPanel from './components/AuthPanel';
 import AboutPage from './components/AboutPage';
 import CategoryManager from './components/CategoryManager';
 import ContactForm from './components/ContactForm';
+import ContactPage from './components/ContactPage';
 import ContactInbox from './components/ContactInbox';
 import ContentPage from './components/ContentPage';
 import CouponManager from './components/CouponManager';
@@ -27,7 +28,12 @@ import PartnerOperationsPanel from './components/PartnerOperationsPanel';
 import PartnerPage from './components/PartnerPage';
 import PartnerRegistrationPage from './components/PartnerRegistrationPage';
 import ProductForm from './components/ProductForm';
+import ProductDetailPage from './components/ProductDetailPage';
+import CartPage from './components/CartPage';
+import CheckoutPage from './components/CheckoutPage';
+import PrivacyPolicyPage from './components/PrivacyPolicyPage';
 import ShopPage from './components/ShopPage';
+import ShoppingCartDrawer from './components/ShoppingCartDrawer';
 import VendorRegistrationForm from './components/VendorRegistrationForm';
 import type { CartItem, Category, Page, Product, ProductVariation, User } from './types';
 
@@ -100,6 +106,9 @@ const App = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [pages, setPages] = useState<Page[]>([]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedVariations, setSelectedVariations] = useState<Record<number, number>>({});
@@ -208,6 +217,7 @@ const App = () => {
         onSearchSubmit={() => navigate('/shop')}
         onToggleMenu={setOpenMenu}
         onOpenCategory={openCategory}
+        onOpenCart={() => setIsCartOpen(true)}
       />
 
       <main>
@@ -222,10 +232,20 @@ const App = () => {
             onRemoveCartItem={(key) => setCartItems((current) => current.filter((item) => cartKey(item.product, item.variation) !== key))}
             onUpdateQuantity={updateCartQuantity} onOrderPlaced={loadData} onOpenPage={openPage}
           />} />
+          <Route path="/product/:productId" element={<ProductDetailPage products={products} onAddToCart={addToCart} />} />
+          <Route path="/cart" element={<CartPage
+            cartItems={cartItems}
+            onRemoveItem={(key) => setCartItems((current) => current.filter((item) => cartKey(item.product, item.variation) !== key))}
+            onUpdateQuantity={updateCartQuantity}
+            couponCode={couponCode} discount={couponDiscount}
+            onCouponApplied={(code, discount) => { setCouponCode(code); setCouponDiscount(discount); }}
+          />} />
+          <Route path="/checkout" element={<CheckoutPage cartItems={cartItems} couponCode={couponCode} discount={couponDiscount} onOrderPlaced={() => { setCartItems([]); setCouponCode(''); setCouponDiscount(0); }} />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/pages/about" element={<AboutPage />} />
           <Route path="/pages/:slug" element={<ContentRoute pages={visiblePages} />} />
           <Route path="/account" element={<section className="account-section"><h2>Account</h2><AuthPanel currentUser={currentUser} onAuthenticated={handleAuthenticated} onLogout={handleLogout} /><AccountCommercePanel user={currentUser} /></section>} />
-          <Route path="/contact" element={<section className="form-section"><ContactForm />{!currentUser || currentUser.role === 'user' ? <VendorRegistrationForm /> : null}</section>} />
+          <Route path="/contact" element={<ContactPage />} />
           <Route path="/partner" element={<PartnerPage />} />
           <Route path="/partner/membership-plans" element={<MembershipPlansPage />} />
           <Route path="/partner/register" element={<PartnerRegistrationPage />} />
@@ -250,6 +270,15 @@ const App = () => {
       </main>
 
       <Footer />
+      {isCartOpen ? <ShoppingCartDrawer
+        cartItems={cartItems}
+        onClose={() => setIsCartOpen(false)}
+        onContinueShopping={() => setIsCartOpen(false)}
+        onViewCart={() => { setIsCartOpen(false); navigate('/cart'); }}
+        onCheckout={() => { setIsCartOpen(false); navigate('/checkout'); }}
+        onRemoveItem={(key) => setCartItems((current) => current.filter((item) => cartKey(item.product, item.variation) !== key))}
+        onUpdateQuantity={updateCartQuantity}
+      /> : null}
     </div>
   );
 };

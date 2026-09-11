@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import type { Category, User } from '../types';
 
 type MenuKey = 'products' | 'partner' | 'about' | null;
@@ -14,6 +15,7 @@ interface HeaderProps {
   onSearchSubmit: () => void;
   onToggleMenu: (menu: MenuKey) => void;
   onOpenCategory: (categoryId: string) => void;
+  onOpenCart: () => void;
 }
 
 // Lime-accent link (Home, Refer & Earn, Log In)
@@ -57,6 +59,12 @@ const BasketIcon = () => (
   </svg>
 );
 
+const quickCategorySets = [
+  [['Baby care', 'Groceries-17-150x150.webp'], ['Sports Stuff', 'Groceries-20-150x150.webp'], ['Vegetables', 'Groceries-2-150x150 (1).webp'], ['Dairy', 'Groceries-4-150x150.webp']],
+  [['Footwear', 'Groceries-15-150x150.webp'], ['Flowers', 'Groceries-18-150x150 (1).webp'], ['Mobile Accessories', 'Groceries-19-150x150.webp'], ['Ready Eatables', 'Groceries-3-150x150.webp']],
+  [['Snacks', 'Groceries-5-150x150.webp'], ['Pharma', 'Groceries-10-150x150.webp'], ['Garments', 'Groceries-16-150x150.webp'], ['Groceries', 'Groceries-1-150x150.webp']],
+] as const;
+
 const Header = ({
   currentUser,
   categories,
@@ -68,7 +76,31 @@ const Header = ({
   onSearchSubmit,
   onToggleMenu,
   onOpenCategory,
+  onOpenCart,
 }: HeaderProps) => {
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
+  const [quickSet, setQuickSet] = useState(0);
+  const [resettingQuickSet, setResettingQuickSet] = useState(false);
+  useEffect(() => {
+    const timer = window.setInterval(() => setQuickSet((current) => current + 1), 4000);
+    return () => window.clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    if (quickSet !== quickCategorySets.length) return;
+    const resetTimer = window.setTimeout(() => {
+      setResettingQuickSet(true);
+      setQuickSet(0);
+      window.requestAnimationFrame(() => window.requestAnimationFrame(() => setResettingQuickSet(false)));
+    }, 720);
+    return () => window.clearTimeout(resetTimer);
+  }, [quickSet]);
+  const openQuickCategory = (name: string) => {
+    const simplify = (value: string) => value.toLowerCase().replace(/[^a-z]/g, '');
+    const label = simplify(name);
+    const category = categories.find((item) => { const itemName = simplify(item.name); return itemName === label || itemName.includes(label) || label.includes(itemName); });
+    if (category) onOpenCategory(String(category.id));
+  };
   return (
     <header className="border-b border-neutral-200 bg-white font-sans">
       <div className="mx-auto flex min-h-[104px] max-w-[1500px] items-center justify-between gap-6 px-5">
@@ -175,13 +207,14 @@ const Header = ({
               ) : null}
             </div>
 
-            <NavLink
-              to="/shop"
+            <button
+              type="button"
               aria-label="Cart"
               className="flex items-center justify-center border-2 border-lime-600 p-1.5 text-lime-600"
+              onClick={onOpenCart}
             >
               <BasketIcon />
-            </NavLink>
+            </button>
 
             <NavLink to="/account" className={accentLinkClass}>
               {currentUser ? 'Account' : 'Log In'}
@@ -202,7 +235,7 @@ const Header = ({
         </nav>
       </div>
 
-      <div className="mx-auto mb-7 max-w-[1100px] px-5">
+      {isHomePage ? <><div className="mx-auto mb-7 max-w-[1100px] px-5">
         <div className="relative w-full">
           <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-lime-600">
             <svg
@@ -230,6 +263,20 @@ const Header = ({
           />
         </div>
       </div>
+
+      <div className="quick-category-carousel" aria-label="Featured product categories">
+        <div className="quick-category-track" style={{ transform: `translateX(-${quickSet * 25}%)`, transition: resettingQuickSet ? 'none' : undefined }}>
+          {[...quickCategorySets, quickCategorySets[0]].map((set, setIndex) => (
+            <div className="quick-category-set" key={setIndex}>
+              {set.map(([name, image]) => (
+                <button type="button" key={name} onClick={() => openQuickCategory(name)}>
+                  <img src={`/images/${image}`} alt="" />
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div></> : null}
     </header>
   );
 };
