@@ -201,6 +201,14 @@ const AboutPage = () => {
               </div>
             ))}
           </div>
+
+          <div className="mt-8 rounded-md bg-white p-8 shadow-[0_2px_20px_rgba(0,0,0,0.08)]">
+            <h3 className="font-serif text-3xl font-bold text-neutral-900">Mr. Prabhanjan Ku Pattanaik</h3>
+            <p className="mt-6 text-base font-semibold text-neutral-900">Co-Founder</p>
+            <p className="mt-8 text-base leading-relaxed text-neutral-600">
+              Prabhanjan has been operating as a transformational coach and trainer supporting purchasers and corporations alike towards true property modification within the areas of general dynamics, humanist approaches, communication, creativity, address, and leadership.
+            </p>
+          </div>
         </div>
       </div>
     </section>

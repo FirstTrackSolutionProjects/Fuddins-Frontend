@@ -1,4 +1,6 @@
 import CartPanel from './CartPanel';
+import { useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { resolveAssetUrl } from '../config';
 import type { CartItem, Category, Page, Product, ProductVariation } from '../types';
 
@@ -22,7 +24,8 @@ const parseVariations = (product: Product): ProductVariation[] => {
 };
 const variationName = (variation: ProductVariation) => Object.values(variation.attributes || {}).filter(Boolean).join(' / ') || variation.title || `Option #${variation.id}`;
 
-const ShopPage = ({ categories, products, pages, cartItems, search, selectedCategory, selectedVariations, loading, onSearchChange, onCategoryChange, onVariationChange, onAddToCart, onClearCart, onRemoveCartItem, onUpdateQuantity, onOrderPlaced, onOpenPage }: ShopPageProps) => {
+const LegacyShopPage = ({ categories, products, pages, cartItems, search, selectedCategory, selectedVariations, loading, onSearchChange, onCategoryChange, onVariationChange, onAddToCart, onClearCart, onRemoveCartItem, onUpdateQuantity, onOrderPlaced, onOpenPage }: ShopPageProps) => {
+  const navigate = useNavigate();
   const filteredProducts = products.filter((product) => product.name.toLowerCase().includes(search.toLowerCase()) && (selectedCategory === 'all' || String(product.categoryId) === selectedCategory));
   return <>
     <section className="mb-6 grid grid-cols-[1fr_auto] overflow-hidden rounded-md bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
@@ -86,11 +89,11 @@ const ShopPage = ({ categories, products, pages, cartItems, search, selectedCate
 
             return (
               <article key={product.id} className="rounded-lg border border-neutral-100 p-3.5 text-center">
-                <div className="mb-3 flex h-[170px] items-center justify-center overflow-hidden rounded-md bg-neutral-50">
+                <div role="button" tabIndex={0} onClick={() => navigate(`/product/${product.id}`)} className="mb-3 flex h-[170px] cursor-pointer items-center justify-center overflow-hidden rounded-md bg-neutral-50">
                   {imageSrc ? <img src={imageSrc} alt={product.name} className="h-full w-full object-contain" /> : <span>No image</span>}
                 </div>
                 <p className="m-0 mb-1.5 text-xs font-bold text-lime-600">{product.category?.name || 'Uncategorized'}</p>
-                <h2 className="m-0 min-h-[44px] text-base leading-[1.35] text-neutral-900">{product.name}</h2>
+                <h2 role="button" tabIndex={0} onClick={() => navigate(`/product/${product.id}`)} className="m-0 min-h-[44px] cursor-pointer text-base leading-[1.35] text-neutral-900">{product.name}</h2>
                 {product.brand ? <p className="mt-1.5 text-xs text-neutral-500">{product.brand}</p> : null}
                 <p className="my-3 text-[17px] font-extrabold text-neutral-900">Rs. {price}</p>
                 {product.regularPrice && product.salePrice ? (
@@ -138,6 +141,91 @@ const ShopPage = ({ categories, products, pages, cartItems, search, selectedCate
       </div>
     </footer>
   </>;
+};
+
+type SortOrder = 'default' | 'popularity' | 'rating' | 'latest' | 'price-low' | 'price-high';
+
+const isOnSale = (product: Product, variation?: ProductVariation) => {
+  const regular = Number(variation?.regularPrice || product.regularPrice || 0);
+  const sale = Number(variation?.salePrice || product.salePrice || 0);
+  return regular > 0 && sale > 0 && sale < regular;
+};
+
+const cardPrice = (product: Product, variation?: ProductVariation) =>
+  Number(variation?.salePrice || variation?.price || product.salePrice || product.price || 0);
+
+const ratingScore = (product: Product) => Number((product as Product & { averageRating?: number }).averageRating || 0);
+const popularityScore = (product: Product) => Number((product as Product & { popularity?: number; salesCount?: number }).popularity || (product as Product & { salesCount?: number }).salesCount || 0);
+
+// Marketplace-style catalog used at /shop. The previous search/sidebar layout is
+// retained above only for backwards reference; it is no longer rendered.
+const ShopPage = ({ categories, products, cartItems, search, selectedCategory, selectedVariations, loading, onCategoryChange, onVariationChange, onAddToCart }: ShopPageProps) => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryOrder = searchParams.get('orderby');
+  const initialOrder: SortOrder = queryOrder === 'popularity' || queryOrder === 'rating' || queryOrder === 'latest' || queryOrder === 'price-low' || queryOrder === 'price-high' ? queryOrder : 'default';
+  const [sortOrder, setSortOrder] = useState<SortOrder>(initialOrder);
+  const filteredProducts = useMemo(() => {
+    const visible = products.filter((product) => product.name.toLowerCase().includes(search.toLowerCase()) && (selectedCategory === 'all' || String(product.categoryId) === selectedCategory));
+    if (sortOrder === 'popularity') return [...visible].sort((a, b) => popularityScore(b) - popularityScore(a) || b.id - a.id);
+    if (sortOrder === 'rating') return [...visible].sort((a, b) => ratingScore(b) - ratingScore(a) || b.id - a.id);
+    if (sortOrder === 'latest') return [...visible].sort((a, b) => b.id - a.id);
+    if (sortOrder === 'price-low') return [...visible].sort((a, b) => cardPrice(a) - cardPrice(b));
+    if (sortOrder === 'price-high') return [...visible].sort((a, b) => cardPrice(b) - cardPrice(a));
+    return visible;
+  }, [products, search, selectedCategory, sortOrder]);
+  const listingProducts = filteredProducts.slice(0, 100);
+
+  return <section className="shop-marketplace">
+    <p className="shop-breadcrumb">Home / Shop{selectedCategory !== 'all' ? ` / ${categories.find((category) => String(category.id) === selectedCategory)?.name || ''}` : ''}</p>
+    <h1>Shop</h1>
+    <div className="shop-toolbar">
+      <p>Showing 1–{Math.min(listingProducts.length, 100)} of {filteredProducts.length} results</p>
+      <div className="shop-filter-controls">
+        <select aria-label="Sort products" value={sortOrder} onChange={(event) => {
+          const nextOrder = event.target.value as SortOrder;
+          setSortOrder(nextOrder);
+          const nextParams = new URLSearchParams(searchParams);
+          if (nextOrder === 'default') nextParams.delete('orderby'); else nextParams.set('orderby', nextOrder);
+          setSearchParams(nextParams);
+        }}>
+          <option value="default">Default sorting</option>
+          <option value="popularity">Sort by popularity</option>
+          <option value="rating">Sort by average rating</option>
+          <option value="latest">Sort by latest</option>
+          <option value="price-low">Sort by price: low to high</option>
+          <option value="price-high">Sort by price: high to low</option>
+        </select>
+      </div>
+    </div>
+    {loading ? <p className="shop-message">Loading products…</p> : null}
+    {!loading && !listingProducts.length ? <p className="shop-message">No products found.</p> : null}
+    <div className="shop-product-grid">
+      {listingProducts.map((product) => {
+        const variations = parseVariations(product);
+        const selectedId = selectedVariations[product.id] || variations[0]?.id;
+        const variation = variations.find((item) => item.id === selectedId);
+        const currentPrice = cardPrice(product, variation);
+        const regularPrice = Number(variation?.regularPrice || product.regularPrice || 0);
+        const imageSrc = resolveAssetUrl(product.imageUrl);
+        const openProduct = () => navigate(`/product/${product.id}`);
+        const isInCart = cartItems.some((item) => item.product.id === product.id && (variations.length === 0 || item.variation?.id === selectedId));
+        return <article className="shop-product-card" key={product.id}>
+          <div className="shop-product-image" role="button" tabIndex={0} onClick={openProduct} onKeyDown={(event) => event.key === 'Enter' && openProduct()}>
+            {isOnSale(product, variation) ? <span className="sale-badge">Sale!</span> : null}
+            {imageSrc ? <img src={imageSrc} alt={product.name} /> : <span className="shop-no-image">No image</span>}
+          </div>
+          <p className="shop-product-category">{product.category?.name || 'Uncategorized'}</p>
+          <h2 role="button" tabIndex={0} onClick={openProduct} onKeyDown={(event) => event.key === 'Enter' && openProduct()}>{product.name}</h2>
+          <p className="shop-price">{isOnSale(product, variation) ? <s>₹{regularPrice.toFixed(2)}</s> : null}<strong>₹{currentPrice.toFixed(2)}</strong></p>
+          {variations.length ? <div className="shop-variations">{variations.map((item) => <button type="button" className={item.id === selectedId ? 'is-selected' : ''} onClick={() => onVariationChange(product.id, item.id)} key={item.id}>{variationName(item)}</button>)}</div> : null}
+          <button type="button" className={`shop-cart-button ${isInCart ? 'is-added' : ''}`} onClick={() => onAddToCart(product)}>ADD TO CART{isInCart ? ' ✓' : ''}</button>
+          <p className="shop-store">Store: <span>🏪 {product.vendor?.storeName || 'Store unavailable'}</span></p>
+          <p className="shop-stars" aria-label="5 star rating">★★★★★</p>
+        </article>;
+      })}
+    </div>
+  </section>;
 };
 
 export default ShopPage;

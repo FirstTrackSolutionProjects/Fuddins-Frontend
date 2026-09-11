@@ -10,6 +10,11 @@ export interface Category {
   name: string;
 }
 
+export interface Vendor {
+  id: number;
+  storeName: string;
+}
+
 export interface Page {
   id: number;
   slug: string;
@@ -47,6 +52,7 @@ export interface Product {
   variations?: string | null;
   categoryId?: number | null;
   category?: Category | null;
+  vendor?: Vendor | null;
 }
 
 export interface CartItem {
