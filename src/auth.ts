@@ -53,6 +53,14 @@ export async function verifyEmailOtp(email: string, code: string): Promise<AuthR
   return authRequest('/auth/email-otp/verify', { email, code }) as Promise<AuthResponse>;
 }
 
+export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+  return authRequest('/auth/password-reset/request', { email }) as Promise<{ message: string }>;
+}
+
+export async function confirmPasswordReset(email: string, code: string, password: string): Promise<AuthResponse> {
+  return authRequest('/auth/password-reset/confirm', { email, code, password }) as Promise<AuthResponse>;
+}
+
 export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
   return authRequest('/auth/google', { idToken }) as Promise<AuthResponse>;
 }

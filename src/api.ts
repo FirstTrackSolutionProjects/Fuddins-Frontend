@@ -142,6 +142,33 @@ export async function createVendor(payload: Record<string, unknown>) {
   return response.json();
 }
 
+export async function updateVendorRegistration(id: number, action: 'approve' | 'reject' | 'suspend' | 'reactivate') {
+  const response = await fetch(`${API_ORIGIN}/commerce/vendors/${id}/${action}`, { method: 'POST', headers: authHeaders() });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `Unable to ${action} vendor`);
+  return data;
+}
+
+export async function fetchDeliveryUsers() {
+  const response = await fetch(`${API_ORIGIN}/admin/delivery-users`, { headers: authHeaders() });
+  if (!response.ok) throw new Error('Failed to fetch delivery users');
+  return response.json();
+}
+
+export async function createDeliveryUser(payload: Record<string, unknown>) {
+  const response = await fetch(`${API_ORIGIN}/admin/delivery-users`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(payload) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'Unable to create delivery user');
+  return data;
+}
+
+export async function setDeliveryUserActive(id: number, active: boolean) {
+  const response = await fetch(`${API_ORIGIN}/admin/delivery-users/${id}/${active ? 'activate' : 'deactivate'}`, { method: 'POST', headers: authHeaders() });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'Unable to update delivery user');
+  return data;
+}
+
 export async function fetchVendorSettlements() {
   const response = await fetch(`${API_ORIGIN}/commerce/vendor-settlements`, { headers: authHeaders() });
   if (!response.ok) throw new Error('Failed to fetch vendor settlements');
