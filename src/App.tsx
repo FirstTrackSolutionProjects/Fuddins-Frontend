@@ -1,40 +1,50 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Navigate, NavLink, Outlet, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { fetchCategories, fetchPages, fetchProducts, fetchUsers } from './api';
 import type { AuthResponse } from './auth';
-import AdminPanel from './components/AdminPanel';
-import AdvancedCommerceManager from './components/AdvancedCommerceManager';
-import AccountCommercePanel from './components/AccountCommercePanel';
-import AuthPanel from './components/AuthPanel';
-import AboutPage from './components/AboutPage';
-import CategoryManager from './components/CategoryManager';
-import ContactForm from './components/ContactForm';
-import ContactPage from './components/ContactPage';
-import ContactInbox from './components/ContactInbox';
-import ContentPage from './components/ContentPage';
-import CouponManager from './components/CouponManager';
-import HomePage from './components/HomePage';
-import CareerPage from './components/CareerPage';
-import ApplyShoppingCardPage from './components/ApplyShoppingCardPage';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import MembershipPlansPage from './components/MembershipPlansPage';
-import MenuUploadPage from './components/MenuUploadPage';
-import OnboardingEnquiryPage from './components/OnboardingEnquiryPage';
+import AdminPanel from './components/admin/AdminPanel';
+import AdminLayout from './components/admin/AdminLayout';
+import AdminProfile from './components/admin/AdminProfile';
+import PartnerProfile from './components/shared/PartnerProfilePage';
+import AdvancedCommerceManager from './components/admin/AdvancedCommerceManager';
+import AccountCommercePanel from './components/customer/AccountCommercePanel';
+import CustomerProfile from './components/customer/CustomerProfile';
+import CustomerPortal from './components/customer/CustomerPortal';
+import AuthPanel from './components/customer/AuthPanel';
+import AboutPage from './pages/AboutPage';
+import CategoryManager from './components/admin/CategoryManager';
+import ContactForm from './pages/ContactForm';
+import ContactPage from './pages/ContactPage';
+import ContactInbox from './components/admin/ContactInbox';
+import DeliveryTeamManager from './components/admin/DeliveryTeamManager';
+import ContentPage from './pages/ContentPage';
+import CouponManager from './components/admin/CouponManager';
+import HomePage from './pages/HomePage';
+import CareerPage from './pages/CareerPage';
+import ApplyShoppingCardPage from './pages/ApplyShoppingCardPage';
+import Header from './components/shared/Header';
+import Footer from './components/shared/Footer';
+import MembershipPlansPage from './pages/MembershipPlansPage';
+import MenuUploadPage from './components/vendor/MenuUploadPage';
+import OnboardingEnquiryPage from './pages/OnboardingEnquiryPage';
 // LandingPage import removed
-import OrdersPanel from './components/OrdersPanel';
-import PageManager from './components/PageManager';
-import PartnerOperationsPanel from './components/PartnerOperationsPanel';
-import PartnerPage from './components/PartnerPage';
-import PartnerRegistrationPage from './components/PartnerRegistrationPage';
-import ProductForm from './components/ProductForm';
-import ProductDetailPage from './components/ProductDetailPage';
-import CartPage from './components/CartPage';
-import CheckoutPage from './components/CheckoutPage';
-import PrivacyPolicyPage from './components/PrivacyPolicyPage';
-import ShopPage from './components/ShopPage';
-import ShoppingCartDrawer from './components/ShoppingCartDrawer';
-import VendorRegistrationForm from './components/VendorRegistrationForm';
+import OrdersPanel from './components/admin/OrdersPanel';
+import PageManager from './components/admin/PageManager';
+import VendorDashboard from './components/vendor/VendorDashboard';
+import VendorOperations from './components/vendor/VendorOperations';
+import DeliveryDashboard from './components/delivery/DeliveryDashboard';
+import DeliveryHistory from './components/delivery/DeliveryHistory';
+import PartnerPage from './pages/PartnerPage';
+import PartnerRegistrationPage from './components/vendor/PartnerRegistrationPage';
+import ProductForm from './components/admin/ProductForm';
+import ProductDetailPage from './pages/ProductDetailPage';
+import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import ShopPage from './pages/ShopPage';
+import ShoppingCartDrawer from './components/customer/ShoppingCartDrawer';
+import VendorRegistrationForm from './components/vendor/VendorRegistrationForm';
+import VendorApprovalManager from './components/admin/VendorApprovalManager';
 import type { CartItem, Category, Page, Product, ProductVariation, User } from './types';
 
 const getStoredUser = () => {
@@ -81,25 +91,9 @@ const ContentRoute = ({ pages }: { pages: Page[] }) => {
   </section>;
 };
 
-const AdminLayout = () => <section className="admin-section">
-  <div className="admin-heading">
-    <h2>Admin & operations</h2>
-    <p>Manage store operations from separate workspaces.</p>
-  </div>
-  <nav className="admin-nav" aria-label="Admin sections">
-    <NavLink to="/admin/products">Products</NavLink>
-    <NavLink to="/admin/categories">Categories</NavLink>
-    <NavLink to="/admin/orders">Orders</NavLink>
-    <NavLink to="/admin/coupons">Coupons</NavLink>
-    <NavLink to="/admin/commerce">Commerce</NavLink>
-    <NavLink to="/admin/inbox">Inbox</NavLink>
-    <NavLink to="/admin/pages">Pages</NavLink>
-  </nav>
-  <Outlet />
-</section>;
-
 const App = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentUser, setCurrentUser] = useState<User | null>(() => getStoredUser());
   const [users, setUsers] = useState<User[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -136,6 +130,7 @@ const App = () => {
 
   const handleAuthenticated = (response: AuthResponse) => {
     setCurrentUser(response.user);
+    if (response.user.role === 'admin' || response.user.role === 'admin_team') navigate('/admin/products');
   };
 
   const handleLogout = () => {
@@ -206,7 +201,7 @@ const App = () => {
 
   return (
     <div className="storefront">
-      <Header
+      {location.pathname !== '/partner' && !location.pathname.startsWith('/admin') ? <Header
         currentUser={currentUser}
         categories={categories}
         isAdmin={isAdmin}
@@ -218,7 +213,7 @@ const App = () => {
         onToggleMenu={setOpenMenu}
         onOpenCategory={openCategory}
         onOpenCart={() => setIsCartOpen(true)}
-      />
+      /> : null}
 
       <main>
         <Routes>
@@ -244,24 +239,39 @@ const App = () => {
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/pages/about" element={<AboutPage />} />
           <Route path="/pages/:slug" element={<ContentRoute pages={visiblePages} />} />
-          <Route path="/account" element={<section className="account-section"><h2>Account</h2><AuthPanel currentUser={currentUser} onAuthenticated={handleAuthenticated} onLogout={handleLogout} /><AccountCommercePanel user={currentUser} /></section>} />
+          <Route path="/account" element={<section className="account-section min-h-[calc(100vh-160px)] bg-[#f8f7f5] px-5 py-14 pb-28">{currentUser?.role === 'user' ? <CustomerProfile user={currentUser} onUserUpdated={setCurrentUser} onLogout={handleLogout} /> : <div className="mx-auto max-w-[900px]"><h2 className="mb-10 font-serif text-[42px] leading-tight">My account</h2><AuthPanel currentUser={currentUser} onAuthenticated={handleAuthenticated} onLogout={handleLogout} /><AccountCommercePanel user={currentUser} /></div>}</section>} />
+          {(['orders', 'wishlist', 'wallet', 'downloads', 'addresses', 'refer'] as const).map((view) => <Route key={view} path={`/account/${view}`} element={currentUser?.role === 'user' ? <section className="min-h-[calc(100vh-160px)] bg-[#f8f7f5] px-5 py-14 pb-28"><CustomerPortal view={view} /></section> : <Navigate to="/account" replace />} />)}
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/partner" element={<PartnerPage />} />
-          <Route path="/partner/membership-plans" element={<MembershipPlansPage />} />
-          <Route path="/partner/register" element={<PartnerRegistrationPage />} />
+          <Route path="/partner/membership-plans" element={<Navigate to="/partner/vendor-register" replace />} />
+          <Route path="/partner/register" element={<Navigate to="/partner/vendor-register" replace />} />
+          <Route path="/partner/vendor-register" element={<MembershipPlansPage />} />
+          <Route path="/vendor-membership" element={<PartnerRegistrationPage />} />
           <Route path="/partner/apply-shopping-card" element={<ApplyShoppingCardPage />} />
-          <Route path="/partner/executive-login" element={<Navigate to="/account" replace />} />
+          <Route path="/partner/executive-login" element={<Navigate to="/partner/vendor-register" replace />} />
           <Route path="/partner/menu-upload" element={<MenuUploadPage />} />
           <Route path="/partner/onboarding-enquiry" element={<OnboardingEnquiryPage />} />
-          <Route path="/partner/dashboard" element={isPartner && !isAdmin ? <section className="partner-section"><PartnerOperationsPanel role={currentUser?.role === 'delivery' ? 'delivery' : 'vendor'} user={currentUser!} /></section> : <Navigate to="/account" replace />} />
+          <Route path="/partner/dashboard" element={currentUser?.role === 'vendor' ? <Navigate to="/partner/vendor/dashboard" replace /> : currentUser?.role === 'delivery' ? <Navigate to="/partner/delivery/dashboard" replace /> : <Navigate to="/account" replace />} />
+          <Route path="/partner/vendor/dashboard" element={currentUser?.role === 'vendor' ? <section className="partner-section min-h-[60vh] bg-neutral-50 px-4 py-6 pb-16"><VendorDashboard user={currentUser} /></section> : <Navigate to="/account" replace />} />
+          <Route path="/partner/delivery/dashboard" element={currentUser?.role === 'delivery' ? <section className="partner-section min-h-[60vh] bg-neutral-50 px-4 py-6 pb-16"><DeliveryDashboard user={currentUser} /></section> : <Navigate to="/account" replace />} />
+          <Route path="/partner/vendor/profile" element={currentUser?.role === 'vendor' ? <section className="min-h-[60vh] bg-neutral-50 px-4 py-6 pb-16"><PartnerProfile user={currentUser} role="vendor" onUserUpdated={setCurrentUser} /></section> : <Navigate to="/account" replace />} />
+          <Route path="/partner/vendor/orders" element={currentUser?.role === 'vendor' ? <section className="min-h-[60vh] bg-neutral-50 px-4 py-6 pb-16"><VendorOperations view="orders" /></section> : <Navigate to="/account" replace />} />
+          <Route path="/partner/vendor/inventory" element={currentUser?.role === 'vendor' ? <section className="min-h-[60vh] bg-neutral-50 px-4 py-6 pb-16"><VendorOperations view="inventory" /></section> : <Navigate to="/account" replace />} />
+          <Route path="/partner/vendor/payouts" element={currentUser?.role === 'vendor' ? <section className="min-h-[60vh] bg-neutral-50 px-4 py-6 pb-16"><VendorOperations view="payouts" /></section> : <Navigate to="/account" replace />} />
+          <Route path="/partner/delivery/profile" element={currentUser?.role === 'delivery' ? <section className="min-h-[60vh] bg-neutral-50 px-4 py-6 pb-16"><PartnerProfile user={currentUser} role="delivery" onUserUpdated={setCurrentUser} /></section> : <Navigate to="/account" replace />} />
+          <Route path="/partner/delivery/history" element={currentUser?.role === 'delivery' ? <section className="min-h-[60vh] bg-neutral-50 px-4 py-6 pb-16"><DeliveryHistory /></section> : <Navigate to="/account" replace />} />
           <Route path="/career" element={<CareerPage />} />
-          <Route path="/admin" element={isAdmin ? <AdminLayout /> : <Navigate to="/account" replace />}>
+          <Route path="/admin" element={isAdmin ? <AdminLayout user={currentUser!} onLogout={handleLogout} /> : <Navigate to="/account" replace />}>
             <Route index element={<Navigate to="products" replace />} />
-            <Route path="products" element={<div className="admin-grid"><ProductForm editingProduct={editingProduct} onProductChanged={loadData} onCancel={() => setEditingProduct(null)} /><AdminPanel products={products} onDeleteProduct={handleDeleteProduct} onEditProduct={setEditingProduct} /></div>} />
+            <Route path="products" element={<AdminPanel products={products} onDeleteProduct={handleDeleteProduct} onEditProduct={(product) => { setEditingProduct(product); navigate('/admin/products/new'); }} />} />
+            <Route path="products/new" element={<ProductForm editingProduct={editingProduct} onProductChanged={loadData} onCancel={() => setEditingProduct(null)} />} />
+            <Route path="account" element={<AdminProfile user={currentUser!} onUserUpdated={setCurrentUser} onLogout={handleLogout} />} />
             <Route path="categories" element={<div className="admin-grid"><CategoryManager categories={categories} onCategoryChanged={loadData} /></div>} />
             <Route path="orders" element={<div className="admin-grid"><OrdersPanel /></div>} />
             <Route path="coupons" element={<div className="admin-grid"><CouponManager /></div>} />
+            <Route path="vendor-approvals" element={<VendorApprovalManager />} />
             <Route path="commerce" element={<div className="admin-grid"><AdvancedCommerceManager /></div>} />
+            <Route path="delivery-team" element={<div className="admin-grid"><DeliveryTeamManager /></div>} />
             <Route path="inbox" element={<div className="admin-grid"><ContactInbox /></div>} />
             <Route path="pages" element={<div className="admin-grid"><PageManager /></div>} />
           </Route>
@@ -269,7 +279,7 @@ const App = () => {
         </Routes>
       </main>
 
-      <Footer />
+      {!location.pathname.startsWith('/admin') ? <Footer /> : null}
       {isCartOpen ? <ShoppingCartDrawer
         cartItems={cartItems}
         onClose={() => setIsCartOpen(false)}
