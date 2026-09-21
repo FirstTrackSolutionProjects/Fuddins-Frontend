@@ -77,7 +77,7 @@ const Footer = () => {
             Download The App &amp; Order Your Favourite Foods Online
           </p>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <a
               href="https://play.google.com"
               target="_blank"

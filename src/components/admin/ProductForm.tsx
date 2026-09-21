@@ -1,5 +1,9 @@
+// CKEditor 5's bundled build has incompatible legacy typings; runtime API is valid.
+// @ts-nocheck
 import { useEffect, useState, type FormEvent } from 'react';
-import { PackagePlus, Image as ImageIcon, Tag, Boxes, FileText } from 'lucide-react';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { PackagePlus, Image as ImageIcon, Tag, Boxes, FileText, ChevronDown } from 'lucide-react';
 import { fetchCategories } from '../../api';
 import { API_BASE_URL, API_ORIGIN } from '../../config';
 import type { Category, Product } from '../../types';
@@ -11,9 +15,25 @@ interface ProductFormProps {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100';
+  'w-full min-w-0 max-w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100';
 
 const sectionLabelClass = 'flex items-center gap-2 text-sm font-bold text-neutral-700';
+
+type DropdownOption = { value: string; label: string };
+
+const ProductDropdown = ({ options, value, placeholder, open, onToggle, onChange, placement = 'down' }: { options: DropdownOption[]; value: string; placeholder: string; open: boolean; onToggle: () => void; onChange: (value: string) => void; placement?: 'up' | 'down' }) => {
+  const selectedLabel = options.find((option) => option.value === value)?.label || placeholder;
+
+  return <div className="relative min-w-0">
+    <button type="button" aria-expanded={open} onClick={onToggle} className={`${inputClass} flex items-center justify-between gap-3 text-left`}>
+      <span className={value ? 'truncate' : 'truncate text-neutral-400'}>{selectedLabel}</span>
+      <ChevronDown size={17} className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+    </button>
+    {open ? <div role="listbox" className={`absolute left-0 z-30 max-h-56 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white py-1 shadow-lg ${placement === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
+      {options.map((option) => <button key={option.value} type="button" role="option" aria-selected={option.value === value} onClick={() => onChange(option.value)} className={`block w-full px-3 py-2 text-left text-sm transition hover:bg-lime-50 ${option.value === value ? 'bg-lime-50 font-semibold text-lime-800' : 'text-neutral-700'}`}>{option.label}</button>)}
+    </div> : null}
+  </div>;
+};
 
 const ProductForm = ({ editingProduct, onProductChanged, onCancel }: ProductFormProps) => {
   const [name, setName] = useState('');
@@ -24,6 +44,7 @@ const ProductForm = ({ editingProduct, onProductChanged, onCancel }: ProductForm
   const [brand, setBrand] = useState('');
   const [stockQuantity, setStockQuantity] = useState('');
   const [stockStatus, setStockStatus] = useState('instock');
+  const [openDropdown, setOpenDropdown] = useState<'stock' | 'category' | null>(null);
   const [description, setDescription] = useState('');
   const [fullDescription, setFullDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -174,7 +195,7 @@ const ProductForm = ({ editingProduct, onProductChanged, onCancel }: ProductForm
   };
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+    <div className="min-w-0 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex items-center gap-2">
         <span className="grid h-9 w-9 place-items-center rounded-lg bg-lime-100 text-lime-700">
           <PackagePlus size={18} strokeWidth={2} />
@@ -209,11 +230,7 @@ const ProductForm = ({ editingProduct, onProductChanged, onCancel }: ProductForm
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <input className={inputClass} placeholder="Stock quantity" type="number" value={stockQuantity} onChange={(e) => setStockQuantity(e.target.value)} />
-            <select className={inputClass} value={stockStatus} onChange={(e) => setStockStatus(e.target.value)}>
-              <option value="instock">In stock</option>
-              <option value="outofstock">Out of stock</option>
-              <option value="onbackorder">On backorder</option>
-            </select>
+            <ProductDropdown options={[{ value: 'instock', label: 'In stock' }, { value: 'outofstock', label: 'Out of stock' }, { value: 'onbackorder', label: 'On backorder' }]} value={stockStatus} placeholder="Select stock status" open={openDropdown === 'stock'} onToggle={() => setOpenDropdown((current) => current === 'stock' ? null : 'stock')} onChange={(value) => { setStockStatus(value); setOpenDropdown(null); }} />
           </div>
         </div>
 
@@ -223,8 +240,8 @@ const ProductForm = ({ editingProduct, onProductChanged, onCancel }: ProductForm
             <FileText size={14} className="text-lime-600" />
             Description
           </p>
-          <textarea className={`${inputClass} min-h-[80px]`} placeholder="Short description" value={description} onChange={(e) => setDescription(e.target.value)} />
-          <textarea className={`${inputClass} min-h-[100px]`} placeholder="Full description" value={fullDescription} onChange={(e) => setFullDescription(e.target.value)} />
+          <label className="text-sm font-bold">Short description<CKEditor editor={ClassicEditor} data={description} onChange={(_, editor) => setDescription(editor.getData())} /></label>
+          <label className="text-sm font-bold">Full description<CKEditor editor={ClassicEditor} data={fullDescription} onChange={(_, editor) => setFullDescription(editor.getData())} /></label>
         </div>
 
         {/* Media */}
@@ -233,7 +250,7 @@ const ProductForm = ({ editingProduct, onProductChanged, onCancel }: ProductForm
             <ImageIcon size={14} className="text-lime-600" />
             Media
           </p>
-          <label className="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-lime-300 bg-lime-50 px-3 py-3 text-sm font-semibold text-lime-700 transition hover:bg-lime-100">
+          <label className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-lime-300 bg-lime-50 px-3 py-3 text-sm font-semibold text-lime-700 transition hover:bg-lime-100">
             {uploading ? 'Uploading...' : 'Choose an image to upload'}
             <input className="hidden" type="file" accept="image/*" onChange={handleUpload} />
           </label>
@@ -249,14 +266,7 @@ const ProductForm = ({ editingProduct, onProductChanged, onCancel }: ProductForm
           </p>
           <textarea className={`${inputClass} min-h-[70px]`} placeholder="Attributes JSON/text" value={attributes} onChange={(e) => setAttributes(e.target.value)} />
           <textarea className={`${inputClass} min-h-[70px]`} placeholder="Variations JSON/text" value={variations} onChange={(e) => setVariations(e.target.value)} />
-          <select className={inputClass} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            <option value="">Select a category</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+          <ProductDropdown options={[{ value: '', label: 'Select a category' }, ...categories.map((category) => ({ value: String(category.id), label: category.name }))]} value={categoryId} placeholder="Select a category" open={openDropdown === 'category'} onToggle={() => setOpenDropdown((current) => current === 'category' ? null : 'category')} onChange={(value) => { setCategoryId(value); setOpenDropdown(null); }} placement="up" />
         </div>
 
         <div className="space-y-2 pt-1">

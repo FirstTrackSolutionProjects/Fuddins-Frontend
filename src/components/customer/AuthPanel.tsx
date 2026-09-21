@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { confirmPasswordReset, loginUser, registerUser, requestEmailOtp, requestPasswordReset, verifyEmailOtp, type AuthResponse } from '../../auth';
 import type { User } from '../../types';
+import PasswordInput from '../shared/PasswordInput';
 
 interface AuthPanelProps {
   currentUser?: User | null;
@@ -168,8 +169,7 @@ const AuthPanel = ({ currentUser, allowedRoles = [], onAuthenticated, onLogout }
               <label className={labelClasses}>
                 Password <span className="text-red-600">*</span>
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 className={`${fieldClasses} mb-4`}
                 value={loginPassword}
                 onChange={(event) => setLoginPassword(event.target.value)}
@@ -207,7 +207,7 @@ const AuthPanel = ({ currentUser, allowedRoles = [], onAuthenticated, onLogout }
               <p className="mb-5 text-sm text-neutral-600">Enter your account email. We will send a 6-digit reset code that expires in 10 minutes.</p>
               <label className={labelClasses}>Email address <span className="text-red-600">*</span></label>
               <input type="email" className={`${fieldClasses} mb-5`} value={loginEmail} onChange={(event) => setLoginEmail(event.target.value)} required />
-              {resetCodeSent ? <><label className={labelClasses}>6-digit reset code</label><input inputMode="numeric" maxLength={6} className={`${fieldClasses} mb-5`} value={resetCode} onChange={(event) => setResetCode(event.target.value)} required /><label className={labelClasses}>New password</label><input type="password" minLength={8} className={`${fieldClasses} mb-5`} value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} required /></> : null}
+              {resetCodeSent ? <><label className={labelClasses}>6-digit reset code</label><input inputMode="numeric" maxLength={6} className={`${fieldClasses} mb-5`} value={resetCode} onChange={(event) => setResetCode(event.target.value)} required /><label className={labelClasses}>New password</label><PasswordInput minLength={8} className={`${fieldClasses} mb-5`} value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} required /></> : null}
               <button type="submit" className={greenButtonClasses}>{resetCodeSent ? 'Reset password' : 'Send reset code'}</button>
               <button type="button" className="mt-4 block text-sm text-lime-700 hover:underline" onClick={() => { setLoginView('password'); setResetCodeSent(false); setLoginMessage(''); }}>Back to login</button>
             </form>
@@ -293,8 +293,7 @@ const AuthPanel = ({ currentUser, allowedRoles = [], onAuthenticated, onLogout }
             <label className={labelClasses}>
               Password <span className="text-red-600">*</span>
             </label>
-            <input
-              type="password"
+            <PasswordInput
               className={`${fieldClasses} mb-5`}
               value={regPassword}
               onChange={(event) => setRegPassword(event.target.value)}

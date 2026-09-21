@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Ticket, Trash2 } from 'lucide-react';
+import { Ticket, Trash2, ChevronDown } from 'lucide-react';
 import { createCoupon, deleteCoupon, fetchCoupons } from '../../api';
 import type { Coupon } from '../../types';
 
@@ -7,6 +7,7 @@ const CouponManager = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [code, setCode] = useState('');
   const [discountType, setDiscountType] = useState('fixed_cart');
+  const [discountTypeOpen, setDiscountTypeOpen] = useState(false);
   const [amount, setAmount] = useState('');
   const [usageLimit, setUsageLimit] = useState('');
   const [message, setMessage] = useState('');
@@ -39,7 +40,7 @@ const CouponManager = () => {
   };
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+    <div className="min-w-0 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex items-center gap-2">
         <span className="grid h-9 w-9 place-items-center rounded-lg bg-lime-100 text-lime-700">
           <Ticket size={18} strokeWidth={2} />
@@ -49,28 +50,24 @@ const CouponManager = () => {
 
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         <input
-          className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100"
+          className="w-full min-w-0 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100"
           placeholder="Code"
           value={code}
           onChange={(event) => setCode(event.target.value)}
         />
-        <select
-          className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-900 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100"
-          value={discountType}
-          onChange={(event) => setDiscountType(event.target.value)}
-        >
-          <option value="fixed_cart">Fixed cart</option>
-          <option value="percent">Percent</option>
-        </select>
+        <div className="relative min-w-0">
+          <button type="button" aria-expanded={discountTypeOpen} onClick={() => setDiscountTypeOpen((open) => !open)} className="flex w-full items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-left text-neutral-900 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100"><span>{discountType === 'percent' ? 'Percent' : 'Fixed cart'}</span><ChevronDown size={17} className={`shrink-0 transition-transform ${discountTypeOpen ? 'rotate-180' : ''}`} /></button>
+          {discountTypeOpen ? <div role="listbox" className="absolute left-0 top-full z-30 mt-1 w-full overflow-hidden rounded-lg border border-neutral-200 bg-white py-1 shadow-lg"><button type="button" role="option" aria-selected={discountType === 'fixed_cart'} onClick={() => { setDiscountType('fixed_cart'); setDiscountTypeOpen(false); }} className={`block w-full px-3 py-2 text-left text-sm hover:bg-lime-50 ${discountType === 'fixed_cart' ? 'bg-lime-50 font-semibold text-lime-800' : 'text-neutral-700'}`}>Fixed cart</button><button type="button" role="option" aria-selected={discountType === 'percent'} onClick={() => { setDiscountType('percent'); setDiscountTypeOpen(false); }} className={`block w-full px-3 py-2 text-left text-sm hover:bg-lime-50 ${discountType === 'percent' ? 'bg-lime-50 font-semibold text-lime-800' : 'text-neutral-700'}`}>Percent</button></div> : null}
+        </div>
         <input
-          className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100"
+          className="w-full min-w-0 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100"
           placeholder="Amount"
           type="number"
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
         />
         <input
-          className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100"
+          className="w-full min-w-0 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100"
           placeholder="Usage limit"
           type="number"
           value={usageLimit}

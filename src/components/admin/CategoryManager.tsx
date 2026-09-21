@@ -43,7 +43,7 @@ const CategoryManager = ({ categories, onCategoryChanged }: CategoryManagerProps
   };
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-lg bg-lime-100 text-lime-700">
@@ -54,15 +54,15 @@ const CategoryManager = ({ categories, onCategoryChanged }: CategoryManagerProps
         <span className="text-sm font-semibold text-neutral-400">{categories.length} total</span>
       </div>
 
-      <form className="mt-5 flex gap-2" onSubmit={handleSubmit}>
+      <form className="mt-5 flex flex-col gap-2 sm:flex-row" onSubmit={handleSubmit}>
         <input
-          className="flex-1 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100"
+          className="min-w-0 flex-1 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100"
           placeholder="New category"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
         <button
-          className="flex items-center gap-1.5 rounded-lg bg-lime-600 px-4 py-2 font-semibold text-white transition hover:bg-lime-700"
+          className="flex items-center justify-center gap-1.5 rounded-lg bg-lime-600 px-4 py-2 font-semibold text-white transition hover:bg-lime-700 sm:shrink-0"
           type="submit"
         >
           <Plus size={16} strokeWidth={2.5} />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ShoppingBag, FileText, Phone, Tag } from 'lucide-react';
+import { ShoppingBag, FileText, Phone, Tag, ChevronDown } from 'lucide-react';
 import { fetchOrders, invoicePdfUrl, updateOrderStatus } from '../../api';
 import type { Order } from '../../types';
 
@@ -11,8 +11,17 @@ const statusStyles: Record<string, string> = {
   refunded: 'bg-neutral-100 text-neutral-600 border-neutral-200',
 };
 
+const orderStatuses = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'processing', label: 'Processing' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'refunded', label: 'Refunded' },
+];
+
 const OrdersPanel = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [openStatusId, setOpenStatusId] = useState<number | null>(null);
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -28,7 +37,7 @@ const OrdersPanel = () => {
   }, []);
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-lg bg-lime-100 text-lime-700">
@@ -87,20 +96,15 @@ const OrdersPanel = () => {
                   ) : null}
                 </div>
 
-                <select
-                  className="mt-3 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100"
-                  value={status}
-                  onChange={async (event) => {
-                    const updated = await updateOrderStatus(order.id, event.target.value);
-                    setOrders((current) => current.map((item) => (item.id === order.id ? updated : item)));
-                  }}
-                >
-                  <option value="pending">Pending</option>
-                  <option value="processing">Processing</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="refunded">Refunded</option>
-                </select>
+                <div className="relative mt-3">
+                  <button type="button" aria-expanded={openStatusId === order.id} onClick={() => setOpenStatusId((current) => current === order.id ? null : order.id)} className="flex w-full items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-left text-sm text-neutral-900 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100">
+                    <span>{orderStatuses.find((item) => item.value === status)?.label || 'Pending'}</span>
+                    <ChevronDown size={17} className={`shrink-0 transition-transform ${openStatusId === order.id ? 'rotate-180' : ''}`} />
+                  </button>
+                  {openStatusId === order.id ? <div role="listbox" className="absolute left-0 top-full z-30 mt-1 max-h-52 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white py-1 shadow-lg">
+                    {orderStatuses.map((option) => <button key={option.value} type="button" role="option" aria-selected={option.value === status} onClick={async () => { setOpenStatusId(null); const updated = await updateOrderStatus(order.id, option.value); setOrders((current) => current.map((item) => (item.id === order.id ? updated : item))); }} className={`block w-full px-3 py-2 text-left text-sm transition hover:bg-lime-50 ${option.value === status ? 'bg-lime-50 font-semibold text-lime-800' : 'text-neutral-700'}`}>{option.label}</button>)}
+                  </div> : null}
+                </div>
 
                 <a
                   className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-lime-700 hover:text-lime-800"

@@ -8,10 +8,24 @@
   background: #ffffff;
 }
 
+/* Media, text, and flex/grid children must never make a phone viewport wider
+   than the screen.  Individual sections can still opt into horizontal scroll
+   where it is intentional (for example, the cart table). */
+#root,
+.home-page {
+  width: 100%;
+  min-width: 0;
+}
+
+img {
+  max-width: 100%;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
   background: #f7f7f7;
 }
 
@@ -82,8 +96,14 @@ textarea {
 }
 
 @media (max-width: 540px) {
-  .quick-category-carousel { height: 145px; width: calc(100% - 24px); }
-  .quick-category-set img { width: 86px; height: 86px; }
+  .quick-category-carousel { height: 145px; width: calc(100% - 24px); max-width: calc(100% - 24px); }
+  /* Keep the category strip stable on phones. The desktop animation moves a
+     400%-wide track and can leave the visible viewport between sets. */
+  .quick-category-track { width: 100% !important; transform: none !important; }
+  .quick-category-set { display: none; width: 100%; min-width: 100%; flex: 0 0 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .quick-category-set:first-child { display: grid; }
+  .quick-category-set button { min-width: 0; }
+  .quick-category-set img { width: min(82px, 100%); height: 82px; }
 }
 
 .home-banner {
@@ -375,12 +395,87 @@ textarea {
 }
 
 @media (max-width: 540px) {
-  .home-banner { height: 230px; }
-  .category-showcase { padding-inline: 18px; }
-  .category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 25px 14px; }
-  .category-card img { border-radius: 16px; }
+  body { overflow-x: hidden; }
+  .shopping-cart-drawer { width: 100%; }
+  .shopping-cart-drawer header, .shopping-cart-content, .shopping-cart-drawer footer { padding-inline: 18px; }
+  .home-banner {
+    width: calc(100% - 36px);
+    height: auto;
+    aspect-ratio: 2 / 1;
+    margin: 0 18px;
+  }
+  .home-banner > img { object-position: center; }
+  .category-showcase { min-width: 0; padding-inline: 28px; }
+  .category-heading { margin-bottom: 38px; }
+  .category-heading h1 {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    font-size: clamp(27px, 8.4vw, 31px);
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+  .category-heading .category-leaf { width: 150px; height: 54px; margin-top: 14px; }
+  .category-grid { grid-template-columns: 1fr; gap: 25px; }
+  .category-card img { aspect-ratio: 1 / 0.9; border-radius: 16px; }
   .category-card span { padding-top: 10px; }
-  .featured-products-grid { grid-template-columns: 1fr; }
+  .featured-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 16px; }
+  .featured-products { padding: 58px 18px; }
+  .featured-products-heading { margin-bottom: 38px; }
+  .cashback-banner { padding: 42px 18px; }
+  .cashback-banner button { width: 100%; min-width: 0; }
+  .shop-marketplace { padding: 36px 16px 54px; }
+  .shop-marketplace > h1 { font-size: 40px; }
+  .shop-product-grid { gap: 28px 12px; }
+  .shop-product-category { font-size: 13px; }
+  .shop-cart-button { font-size: 13px; padding: 12px 5px; }
+  .product-detail-page { padding-inline: 16px; }
+  .checkout-page, .cart-page { padding-inline: 16px; }
+}
+
+.home-banner > img.is-resetting { transition: none; }
+
+/* Explicit mobile header sizing: do not rely on the logo file's intrinsic
+   dimensions, which are much larger than a phone viewport. */
+.mobile-site-header { min-height: 104px !important; }
+.mobile-logo-frame { position: relative !important; width: 150px !important; height: 76px !important; overflow: hidden !important; flex: 0 1 auto !important; }
+.mobile-logo-frame > .mobile-site-logo { position: absolute !important; inset: 0 !important; display: block !important; width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; min-width: 0 !important; object-fit: contain !important; }
+.mobile-cart-button { width: 36px; height: 36px; padding: 0; }
+.mobile-menu-button { width: 46px; height: 46px; }
+@media (max-width: 1023px) {
+  .mobile-site-header {
+    display: flex !important;
+    position: relative;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 88px !important;
+    overflow: hidden;
+    padding-inline: 16px !important;
+  }
+  .mobile-logo-frame { width: 112px !important; height: 56px !important; min-width: 0 !important; }
+  .mobile-logo-frame > .mobile-site-logo { width: 100% !important; height: 56px !important; }
+  .mobile-header-actions {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    display: flex !important;
+    flex: 0 0 auto;
+    transform: translateY(-50%);
+  }
+  nav[aria-label='Mobile navigation'] { overflow-y: auto; padding: 80px 28px 40px !important; }
+  nav[aria-label='Mobile navigation'] > button { width: 72px; height: 76px; font-size: 2.25rem; }
+  nav[aria-label='Mobile navigation'] > div { gap: 1.75rem; font-size: 26px; }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .mobile-site-header { min-height: 104px !important; padding-inline: 20px !important; }
+  .mobile-logo-frame { width: 150px !important; height: 76px !important; }
+  .mobile-logo-frame > .mobile-site-logo { height: 76px !important; }
+  .mobile-cart-button { width: 44px; height: 44px; }
+  .mobile-menu-button { width: 60px; height: 60px; }
+  nav[aria-label='Mobile navigation'] { padding: 96px 48px 48px !important; }
+  nav[aria-label='Mobile navigation'] > button { width: 108px; height: 124px; font-size: 3rem; }
+  nav[aria-label='Mobile navigation'] > div { gap: 2.25rem; font-size: 31px; }
 }
 
 /* Shop catalog: marketplace listing without the former checkout sidebar. */

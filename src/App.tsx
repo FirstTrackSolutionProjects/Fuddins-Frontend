@@ -34,6 +34,8 @@ import VendorDashboard from './components/vendor/VendorDashboard';
 import VendorOperations from './components/vendor/VendorOperations';
 import DeliveryDashboard from './components/delivery/DeliveryDashboard';
 import DeliveryHistory from './components/delivery/DeliveryHistory';
+import DeliveryWallet from './components/delivery/DeliveryWallet';
+import DeliveryWithdrawalsManager from './components/admin/DeliveryWithdrawalsManager';
 import PartnerPage from './pages/PartnerPage';
 import PartnerRegistrationPage from './components/vendor/PartnerRegistrationPage';
 import ProductForm from './components/admin/ProductForm';
@@ -44,6 +46,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import ShopPage from './pages/ShopPage';
 import ShoppingCartDrawer from './components/customer/ShoppingCartDrawer';
 import VendorRegistrationForm from './components/vendor/VendorRegistrationForm';
+import VendorWelcomePage from './pages/VendorWelcomePage';
 import VendorApprovalManager from './components/admin/VendorApprovalManager';
 import type { CartItem, Category, Page, Product, ProductVariation, User } from './types';
 
@@ -247,6 +250,7 @@ const App = () => {
           <Route path="/partner/register" element={<Navigate to="/partner/vendor-register" replace />} />
           <Route path="/partner/vendor-register" element={<MembershipPlansPage />} />
           <Route path="/vendor-membership" element={<PartnerRegistrationPage />} />
+          <Route path="/partner/welcome" element={<VendorWelcomePage />} />
           <Route path="/partner/apply-shopping-card" element={<ApplyShoppingCardPage />} />
           <Route path="/partner/executive-login" element={<Navigate to="/partner/vendor-register" replace />} />
           <Route path="/partner/menu-upload" element={<MenuUploadPage />} />
@@ -260,6 +264,7 @@ const App = () => {
           <Route path="/partner/vendor/payouts" element={currentUser?.role === 'vendor' ? <section className="min-h-[60vh] bg-neutral-50 px-4 py-6 pb-16"><VendorOperations view="payouts" /></section> : <Navigate to="/account" replace />} />
           <Route path="/partner/delivery/profile" element={currentUser?.role === 'delivery' ? <section className="min-h-[60vh] bg-neutral-50 px-4 py-6 pb-16"><PartnerProfile user={currentUser} role="delivery" onUserUpdated={setCurrentUser} /></section> : <Navigate to="/account" replace />} />
           <Route path="/partner/delivery/history" element={currentUser?.role === 'delivery' ? <section className="min-h-[60vh] bg-neutral-50 px-4 py-6 pb-16"><DeliveryHistory /></section> : <Navigate to="/account" replace />} />
+          <Route path="/partner/delivery/wallet" element={currentUser?.role === 'delivery' ? <section className="min-h-[60vh] bg-neutral-50 px-4 py-6 pb-16"><DeliveryWallet /></section> : <Navigate to="/account" replace />} />
           <Route path="/career" element={<CareerPage />} />
           <Route path="/admin" element={isAdmin ? <AdminLayout user={currentUser!} onLogout={handleLogout} /> : <Navigate to="/account" replace />}>
             <Route index element={<Navigate to="products" replace />} />
@@ -272,6 +277,7 @@ const App = () => {
             <Route path="vendor-approvals" element={<VendorApprovalManager />} />
             <Route path="commerce" element={<div className="admin-grid"><AdvancedCommerceManager /></div>} />
             <Route path="delivery-team" element={<div className="admin-grid"><DeliveryTeamManager /></div>} />
+            <Route path="delivery-withdrawals" element={<DeliveryWithdrawalsManager />} />
             <Route path="inbox" element={<div className="admin-grid"><ContactInbox /></div>} />
             <Route path="pages" element={<div className="admin-grid"><PageManager /></div>} />
           </Route>

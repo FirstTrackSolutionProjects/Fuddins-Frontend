@@ -60,8 +60,21 @@ interface HomePageProps {
 const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onAddToCart }: HomePageProps) => {
   const [activeBanner, setActiveBanner] = useState(0);
   const [exitingBanner, setExitingBanner] = useState<number | null>(null);
+  const [resettingBanner, setResettingBanner] = useState(false);
   const showBanner = (nextBanner: number) => {
     if (nextBanner === activeBanner) return;
+    // The final banner cannot transition directly to the first with this
+    // stacked-slider layout; doing so makes it enter from the right. Reset it
+    // without a transform transition, while every normal step slides left.
+    if (nextBanner < activeBanner) {
+      setExitingBanner(null);
+      setResettingBanner(true);
+      setActiveBanner(nextBanner);
+      // Keep the no-transition state through a paint; one short frame can be
+      // skipped by a busy browser and reveal a right-to-left reset animation.
+      window.setTimeout(() => setResettingBanner(false), 120);
+      return;
+    }
     setExitingBanner(activeBanner);
     setActiveBanner(nextBanner);
     window.setTimeout(() => setExitingBanner(null), 720);
@@ -116,7 +129,7 @@ const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onA
   }, [products]);
   return <div className="home-page">
     <section className="home-banner" aria-label="Featured offers">
-      {bannerImages.map((src, index) => <img key={src} src={src} alt="Fuddins offer" className={index === activeBanner ? 'is-active' : index === exitingBanner ? 'is-exiting' : ''} />)}
+      {bannerImages.map((src, index) => <img key={src} src={src} alt="Fuddins offer" className={index === activeBanner ? `is-active${resettingBanner ? ' is-resetting' : ''}` : index === exitingBanner ? 'is-exiting' : ''} />)}
       <div className="banner-dots" role="tablist" aria-label="Choose offer banner">{bannerImages.map((_, index) => <button key={index} type="button" aria-label={`Show banner ${index + 1}`} aria-selected={index === activeBanner} className={index === activeBanner ? 'is-active' : ''} onClick={() => showBanner(index)} />)}</div>
     </section>
     <section className="category-showcase" aria-labelledby="categories-title">

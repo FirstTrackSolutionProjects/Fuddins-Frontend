@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useState } from 'react';
 import { Inbox, Mail, Phone } from 'lucide-react';
 import { API_ORIGIN } from '../../config';

@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import type { Category, User } from '../../types';
 
 type MenuKey = 'products' | 'partner' | 'about' | null;
+type MobileMenuKey = Exclude<MenuKey, null>;
 
 interface HeaderProps {
   currentUser: User | null;
@@ -50,6 +51,12 @@ const ChevronIcon = () => (
   </svg>
 );
 
+const MobileRow = ({ label, open, onClick }: { label: string; open: boolean; onClick: () => void }) => (
+  <button type="button" onClick={onClick} aria-expanded={open} className={`flex w-full items-center justify-between rounded-xl border px-4 py-3.5 text-left font-semibold transition ${open ? 'border-lime-300 bg-lime-50 text-lime-800 shadow-sm' : 'border-transparent text-neutral-800 hover:border-lime-200 hover:bg-lime-50'}`}> 
+    <span>{label}</span><span className={`grid h-7 w-7 place-items-center rounded-full bg-lime-100 text-lime-700 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}><ChevronIcon /></span>
+  </button>
+);
+
 // Solid filled basket icon (matches reference screenshot)
 const BasketIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
@@ -82,16 +89,23 @@ const Header = ({
   const isHomePage = location.pathname === '/';
   const [quickSet, setQuickSet] = useState(0);
   const [resettingQuickSet, setResettingQuickSet] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSubMenu, setMobileSubMenu] = useState<MobileMenuKey | null>(null);
   useEffect(() => {
     const timer = window.setInterval(() => setQuickSet((current) => current + 1), 4000);
     return () => window.clearInterval(timer);
   }, []);
   useEffect(() => {
+    // The final rendered set is a duplicate of the first. Slide to it from
+    // right-to-left, then jump back to the real first set with no transition.
     if (quickSet !== quickCategorySets.length) return;
     const resetTimer = window.setTimeout(() => {
       setResettingQuickSet(true);
       setQuickSet(0);
-      window.requestAnimationFrame(() => window.requestAnimationFrame(() => setResettingQuickSet(false)));
+      // Hold the reset long enough for the browser to paint the duplicated
+      // final frame without a transition, preventing the wrap from flipping
+      // back in from the right.
+      window.setTimeout(() => setResettingQuickSet(false), 120);
     }, 720);
     return () => window.clearTimeout(resetTimer);
   }, [quickSet]);
@@ -103,12 +117,12 @@ const Header = ({
   };
   return (
     <header className="border-b border-neutral-200 bg-white font-sans">
-      <div className="mx-auto flex min-h-[104px] max-w-[1500px] items-center justify-between gap-6 px-5">
-        <div className="flex items-center gap-3">
-          <img src="/images/cropped-fuddns.webp" alt="Fuddins" className="h-[76px] w-[150px] object-contain" />
+      <div className="mobile-site-header mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-5" style={{ width: '100%', maxWidth: '1500px', minWidth: 0 }}>
+        <div className="mobile-logo-frame" style={{ width: 112, height: 56, minWidth: 0, overflow: 'hidden' }}>
+          <img src="/images/cropped-fuddns.webp" alt="Fuddins" className="mobile-site-logo" style={{ display: 'block', width: '100%', height: '100%', maxWidth: '100%', objectFit: 'contain' }} />
         </div>
 
-        <nav className="flex flex-1 flex-wrap items-center justify-between pl-10">
+        <nav className="hidden flex-1 items-center justify-between pl-10 lg:flex">
           {/* left group */}
           <div className="flex items-center gap-8">
             <NavLink to="/" className={accentLinkClass}>
@@ -233,7 +247,15 @@ const Header = ({
             ) : null}
           </div>
         </nav>
+        <div className="mobile-header-actions flex items-center gap-2.5 lg:hidden" style={{ flex: '0 0 auto' }}>
+          <button type="button" aria-label="Cart" className="mobile-cart-button flex items-center justify-center border-2 border-lime-600 text-lime-600" onClick={onOpenCart}><BasketIcon /></button>
+          <button type="button" aria-label="Open navigation" aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen(true)} className="mobile-menu-button grid place-items-center bg-lime-500 text-white">
+            <span className="text-4xl font-light leading-none">☰</span>
+          </button>
+        </div>
       </div>
+
+      {mobileMenuOpen ? <div className="fixed inset-0 z-[100] bg-black/45 backdrop-blur-[1px] lg:hidden"><button type="button" aria-label="Close menu" onClick={() => setMobileMenuOpen(false)} className="absolute inset-0 h-full w-full cursor-default"/><nav className="relative ml-auto min-h-full w-[88%] max-w-sm bg-white px-5 pb-8 pt-20 shadow-2xl" aria-label="Mobile navigation"><button type="button" aria-label="Close navigation" onClick={() => setMobileMenuOpen(false)} className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-xl bg-neutral-100 text-3xl font-light text-neutral-700 transition hover:bg-lime-100 hover:text-lime-800">×</button><div className="grid gap-2 text-base font-medium leading-tight text-neutral-800 [&>a]:rounded-xl [&>a]:px-4 [&>a]:py-3.5 [&>a]:transition [&>a:hover]:bg-lime-50 [&>a:hover]:text-lime-800"><NavLink onClick={() => setMobileMenuOpen(false)} to="/account">{currentUser ? 'My account' : 'Log In'}</NavLink><NavLink onClick={() => setMobileMenuOpen(false)} to="/">Home</NavLink><MobileRow label="All Products" open={mobileSubMenu === 'products'} onClick={() => setMobileSubMenu(mobileSubMenu === 'products' ? null : 'products')}/>{mobileSubMenu === 'products' ? <div className="grid max-h-56 gap-1 overflow-y-auto rounded-xl bg-lime-50 p-2 text-sm text-neutral-700">{categories.map((category) => <button key={category.id} onClick={() => { onOpenCategory(String(category.id)); setMobileMenuOpen(false); }} className="rounded-lg px-3 py-2 text-left transition hover:bg-white hover:text-lime-800">{category.name}</button>)}</div> : null}{currentUser?.role === 'user' ? <NavLink onClick={() => setMobileMenuOpen(false)} to="/account/orders">My Orders</NavLink> : null}<NavLink onClick={() => setMobileMenuOpen(false)} to="/pages/refer-earn">Refer &amp; Earn</NavLink><div className={`flex items-center justify-between rounded-xl border px-4 py-3.5 font-semibold transition ${mobileSubMenu === 'partner' ? 'border-lime-300 bg-lime-50 text-lime-800 shadow-sm' : 'border-transparent text-neutral-800 hover:border-lime-200 hover:bg-lime-50'}`}><NavLink to="/partner" onClick={() => setMobileMenuOpen(false)} className="flex-1">Partner</NavLink><button type="button" aria-label="Toggle Partner menu" aria-expanded={mobileSubMenu === 'partner'} onClick={() => setMobileSubMenu(mobileSubMenu === 'partner' ? null : 'partner')} className={`grid h-7 w-7 place-items-center rounded-full bg-lime-100 text-lime-700 transition-transform duration-200 ${mobileSubMenu === 'partner' ? 'rotate-180' : ''}`}><ChevronIcon /></button></div>{mobileSubMenu === 'partner' ? <div className="grid max-h-56 gap-1 overflow-y-auto rounded-xl bg-lime-50 p-2 text-sm text-neutral-700"><NavLink onClick={() => setMobileMenuOpen(false)} to="/partner/apply-shopping-card">Apply shopping card</NavLink><NavLink onClick={() => setMobileMenuOpen(false)} to="/partner/vendor-register">Executive Login</NavLink><NavLink onClick={() => setMobileMenuOpen(false)} to="/partner/menu-upload">Menu Upload</NavLink><NavLink onClick={() => setMobileMenuOpen(false)} to="/partner/onboarding-enquiry">Onboarding Enquiry</NavLink></div> : null}<MobileRow label="About us" open={mobileSubMenu === 'about'} onClick={() => setMobileSubMenu(mobileSubMenu === 'about' ? null : 'about')}/>{mobileSubMenu === 'about' ? <div className="grid max-h-56 gap-1 overflow-y-auto rounded-xl bg-lime-50 p-2 text-sm text-neutral-700"><NavLink onClick={() => setMobileMenuOpen(false)} to="/pages/about">About</NavLink><NavLink onClick={() => setMobileMenuOpen(false)} to="/contact">Contact</NavLink></div> : null}{isPartner && !isAdmin ? <NavLink onClick={() => setMobileMenuOpen(false)} to={currentUser?.role === 'delivery' ? '/partner/delivery/dashboard' : '/partner/vendor/dashboard'}>Dashboard</NavLink> : null}{isAdmin ? <NavLink onClick={() => setMobileMenuOpen(false)} to="/admin">Admin</NavLink> : null}</div></nav></div> : null}
 
       {isHomePage ? <><div className="mx-auto mb-7 max-w-[1100px] px-5">
         <div className="relative w-full">

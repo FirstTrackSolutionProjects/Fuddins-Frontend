@@ -1,4 +1,7 @@
+// @ts-nocheck
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { NavLink } from 'react-router-dom';
 import { API_ORIGIN } from '../../config';
 import type { User } from '../../types';
@@ -34,10 +37,11 @@ const getInitials = (name: string) =>
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'U';
 
-const inputClasses = 'min-h-[42px] rounded-lg border border-neutral-300 bg-white px-3 text-neutral-900 placeholder:text-neutral-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500';
-const statCardClasses = 'rounded-xl bg-neutral-50 p-4';
-const primaryButtonClasses = 'min-h-[42px] rounded-lg bg-lime-600 px-6 font-semibold text-white transition hover:bg-lime-700 disabled:cursor-not-allowed disabled:opacity-60';
-const outlineButtonClasses = 'inline-flex min-h-[42px] items-center justify-center rounded-lg border border-neutral-300 bg-white px-4 font-semibold text-neutral-700 transition hover:bg-neutral-50';
+const inputClasses = 'min-h-[42px] w-full min-w-0 rounded-lg border border-neutral-300 bg-white px-3 text-neutral-900 placeholder:text-neutral-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500';
+const textareaClasses = 'w-full min-w-0 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-900 placeholder:text-neutral-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500';
+const statCardClasses = 'min-w-0 rounded-xl bg-neutral-50 p-3 sm:p-4';
+const primaryButtonClasses = 'min-h-[42px] rounded-lg bg-lime-600 px-4 sm:px-6 font-semibold text-white transition hover:bg-lime-700 disabled:cursor-not-allowed disabled:opacity-60';
+const outlineButtonClasses = 'inline-flex min-h-[42px] min-w-0 items-center justify-center rounded-lg border border-neutral-300 bg-white px-3 sm:px-4 font-semibold text-neutral-700 transition hover:bg-neutral-50';
 
 const statusBadgeTone = (status: string) => {
   const value = (status || '').toLowerCase();
@@ -95,9 +99,27 @@ const StatCard = ({ icon, label, value, tone }: { icon: React.ReactNode; label: 
       {icon}
       {label}
     </div>
-    <strong className={`mt-1.5 block text-2xl font-semibold ${tone || 'text-neutral-900'}`}>{value}</strong>
+    <strong className={`mt-1.5 block break-words text-xl font-semibold sm:text-2xl ${tone || 'text-neutral-900'}`}>{value}</strong>
   </div>
 );
+
+const emptyProductForm = {
+  name: '',
+  sku: '',
+  brand: '',
+  categoryId: '',
+  price: '',
+  regularPrice: '',
+  salePrice: '',
+  stockQuantity: '',
+  lowStockThreshold: '',
+  mainImageUrl: '',
+  galleryImageUrls: '',
+  shortDescription: '',
+  description: '',
+  attributes: '',
+  variations: '',
+};
 
 const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User }) => {
   const [products, setProducts] = useState<RecordValue[]>([]);
@@ -105,7 +127,7 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
   const [settlements, setSettlements] = useState<RecordValue[]>([]);
   const [summary, setSummary] = useState<RecordValue>({});
   const [membership, setMembership] = useState<RecordValue>({});
-  const [form, setForm] = useState({ name: '', price: '', stockQuantity: '', description: '' });
+  const [form, setForm] = useState(emptyProductForm);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -145,8 +167,42 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
     event.preventDefault();
     setBusy(true);
     try {
-      await request('/partner/vendor/products', { method: 'POST', body: JSON.stringify({ name: form.name, price: Number(form.price), stockQuantity: Number(form.stockQuantity || 0), description: form.description }) });
-      setForm({ name: '', price: '', stockQuantity: '', description: '' });
+      let attributes: RecordValue = {};
+      let variations: RecordValue[] = [];
+      try {
+        attributes = form.attributes ? JSON.parse(form.attributes) : {};
+      } catch {
+        throw new Error('Attributes must be valid JSON, e.g. {"color":"red","size":"M"}');
+      }
+      try {
+        variations = form.variations ? JSON.parse(form.variations) : [];
+      } catch {
+        throw new Error('Variations must be valid JSON array, e.g. [{"sku":"...","price":100}]');
+      }
+
+      await request('/partner/vendor/products', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: form.name,
+          sku: form.sku,
+          brand: form.brand,
+          categoryId: form.categoryId ? Number(form.categoryId) : null,
+          price: Number(form.price),
+          regularPrice: form.regularPrice ? Number(form.regularPrice) : Number(form.price),
+          salePrice: form.salePrice ? Number(form.salePrice) : null,
+          stockQuantity: Number(form.stockQuantity || 0),
+          lowStockThreshold: form.lowStockThreshold ? Number(form.lowStockThreshold) : null,
+          mainImageUrl: form.mainImageUrl,
+          galleryImageUrls: form.galleryImageUrls
+            ? form.galleryImageUrls.split(',').map((url) => url.trim()).filter(Boolean)
+            : [],
+          shortDescription: form.shortDescription,
+          description: form.description,
+          attributes,
+          variations,
+        }),
+      });
+      setForm(emptyProductForm);
       setMessage('Product created successfully.');
       await load();
     } catch (error) {
@@ -183,23 +239,23 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
   };
 
   return (
-    <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+    <section className="min-w-0 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+        <div className="min-w-0 flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-lime-100 text-sm font-semibold text-lime-800">
             {getInitials(user.name)}
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="font-semibold text-neutral-900">{user.name}</p>
-            <p className="text-sm text-neutral-500">{user.email}</p>
+            <p className="truncate text-sm text-neutral-500">{user.email}</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          {role === 'vendor' ? <><NavLink to="/partner/vendor/orders" className={outlineButtonClasses}>Orders</NavLink><NavLink to="/partner/vendor/inventory" className={outlineButtonClasses}>Inventory</NavLink><NavLink to="/partner/vendor/payouts" className={outlineButtonClasses}>Payouts</NavLink></> : <NavLink to="/partner/delivery/history" className={outlineButtonClasses}>History</NavLink>}
-          <NavLink to={`/partner/${role}/profile`} className={outlineButtonClasses}>
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+          {role === 'vendor' ? <><NavLink to="/partner/vendor/orders" className={outlineButtonClasses}>Orders</NavLink><NavLink to="/partner/vendor/inventory" className={outlineButtonClasses}>Inventory</NavLink><NavLink to="/partner/vendor/payouts" className={outlineButtonClasses}>Payouts</NavLink></> : <><NavLink to="/partner/delivery/history" className={outlineButtonClasses}>History</NavLink><NavLink to="/partner/delivery/wallet" className={outlineButtonClasses}>Wallet & withdrawals</NavLink></>}
+          <NavLink to={`/partner/${role}/profile`} className={`${outlineButtonClasses} col-span-1`}>
             My profile
           </NavLink>
-          <button type="button" onClick={load} disabled={busy} className={primaryButtonClasses}>
+          <button type="button" onClick={load} disabled={busy} className={`${primaryButtonClasses} col-span-1`}>
             <IconRefresh />
             <span className="ml-1.5">Refresh</span>
           </button>
@@ -223,6 +279,7 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
             <StatCard icon={<IconTruck />} label="Total deliveries" value={summary.total || 0} />
             <StatCard icon={<IconTruck />} label="Active" value={summary.active || 0} tone="text-amber-700" />
             <StatCard icon={<IconPackage />} label="Delivered" value={summary.delivered || 0} tone="text-lime-700" />
+            <StatCard icon={<IconRupee />} label="Delivery wallet" value={`Rs. ${summary.walletBalance || 0}`} tone="text-lime-700" />
             <StatCard icon={<IconRupee />} label="COD to collect" value={`Rs. ${summary.codToCollect || 0}`} />
           </>
         )}
@@ -230,13 +287,29 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
 
       {role === 'vendor' ? (
         <>
-          <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-5">
+          <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-3 sm:p-5">
             <h4 className="mb-4 text-base font-semibold text-neutral-900">Add a product</h4>
             <form className="grid grid-cols-1 gap-3 sm:grid-cols-2" onSubmit={createProduct}>
               <input required placeholder="Product name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={inputClasses} />
+              <input placeholder="SKU" value={form.sku} onChange={(event) => setForm({ ...form, sku: event.target.value })} className={inputClasses} />
+              <input placeholder="Brand" value={form.brand} onChange={(event) => setForm({ ...form, brand: event.target.value })} className={inputClasses} />
+              <input type="number" placeholder="Category ID" value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value })} className={inputClasses} />
+
               <input required type="number" min="0" step="0.01" placeholder="Price" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className={inputClasses} />
+              <input type="number" min="0" step="0.01" placeholder="Regular price" value={form.regularPrice} onChange={(event) => setForm({ ...form, regularPrice: event.target.value })} className={inputClasses} />
+              <input type="number" min="0" step="0.01" placeholder="Sale price" value={form.salePrice} onChange={(event) => setForm({ ...form, salePrice: event.target.value })} className={inputClasses} />
               <input type="number" min="0" placeholder="Stock quantity" value={form.stockQuantity} onChange={(event) => setForm({ ...form, stockQuantity: event.target.value })} className={inputClasses} />
-              <input placeholder="Short description" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={inputClasses} />
+
+              <input type="number" min="0" placeholder="Low-stock threshold" value={form.lowStockThreshold} onChange={(event) => setForm({ ...form, lowStockThreshold: event.target.value })} className={inputClasses} />
+              <input placeholder="Main image URL" value={form.mainImageUrl} onChange={(event) => setForm({ ...form, mainImageUrl: event.target.value })} className={inputClasses} />
+              <input placeholder="Gallery image URLs (comma separated)" value={form.galleryImageUrls} onChange={(event) => setForm({ ...form, galleryImageUrls: event.target.value })} className={`${inputClasses} sm:col-span-2`} />
+
+              <input placeholder="Short description" value={form.shortDescription} onChange={(event) => setForm({ ...form, shortDescription: event.target.value })} className={`${inputClasses} sm:col-span-2`} />
+              <label className="text-sm font-bold sm:col-span-2">Full description<CKEditor editor={ClassicEditor} data={form.description} onChange={(_, editor) => setForm({ ...form, description: editor.getData() })} /></label>
+
+              <textarea placeholder='Attributes (JSON, e.g. {"color":"red","size":"M"})' value={form.attributes} onChange={(event) => setForm({ ...form, attributes: event.target.value })} className={`${textareaClasses} min-h-[70px] sm:col-span-2`} />
+              <textarea placeholder='Variations (JSON array, e.g. [{"sku":"P-RED-M","price":499}])' value={form.variations} onChange={(event) => setForm({ ...form, variations: event.target.value })} className={`${textareaClasses} min-h-[70px] sm:col-span-2`} />
+
               <button type="submit" disabled={busy} className={`${primaryButtonClasses} flex items-center justify-center sm:col-span-2`}>
                 <IconPlus />
                 <span className="ml-1.5">Add product</span>
