@@ -114,24 +114,33 @@ textarea {
   background: #f8f2ed;
 }
 
-.home-banner > img {
+.home-banner-slide {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  background-position: center;
+  background-size: cover;
+  color: inherit;
+  text-decoration: none;
   opacity: 0;
   transform: translateX(100%);
   transition: transform 700ms ease-in-out, opacity 700ms ease-in-out;
   will-change: transform;
 }
 
-.home-banner > img.is-active {
+.home-banner-caption { position: absolute; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; gap: 4px; padding: 42px 6vw 58px; color: #fff; background: linear-gradient(transparent, rgb(0 0 0 / 58%)); }
+.home-banner-caption b { font-size: clamp(20px, 3vw, 40px); }
+.home-banner-caption small { font-size: clamp(13px, 1.3vw, 18px); }
+
+.home-banner-slide.is-active {
   opacity: 1;
   transform: translateX(0);
 }
 
-.home-banner > img.is-exiting {
+.home-banner-slide.is-resetting { transition: none; }
+
+.home-banner-slide.is-exiting {
   opacity: 1;
   transform: translateX(-100%);
 }
@@ -404,7 +413,7 @@ textarea {
     aspect-ratio: 2 / 1;
     margin: 0 18px;
   }
-  .home-banner > img { object-position: center; }
+  .home-banner-slide { background-position: center; }
   .category-showcase { min-width: 0; padding-inline: 28px; }
   .category-heading { margin-bottom: 38px; }
   .category-heading h1 {
@@ -433,7 +442,7 @@ textarea {
   .checkout-page, .cart-page { padding-inline: 16px; }
 }
 
-.home-banner > img.is-resetting { transition: none; }
+.home-banner-slide.is-resetting { transition: none; }
 
 /* Explicit mobile header sizing: do not rely on the logo file's intrinsic
    dimensions, which are much larger than a phone viewport. */

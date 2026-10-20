@@ -1,4 +1,4 @@
-import { useEffect, useState, type SyntheticEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { resolveAssetUrl } from '../config';
 import type { Category, Product } from '../types';
@@ -39,11 +39,12 @@ const ProductSection = ({ title, products, onAddToCart, alwaysShow = false }: { 
   </section>;
 };
 
-const bannerImages = [
+const fallbackBannerImages = [
   '/images/WhatsApp-Image-2023-03-09-at-1.34.26-PM.webp',
   '/images/WE-ARE-PROUD-TO-INTRODUCE-1-scaled.webp',
   '/images/WE-ARE-PROUD-TO-INTRODUCE-2-scaled.webp',
 ];
+type BannerSlide = { id: number; title: string; subtitle?: string | null; imageUrl: string; linkUrl?: string | null };
 
 const showcaseCategories = [
   ['Beauty & Cosmetic', 'Waste-management-in-beauty-can-be-improved-if-brands-add-value-and-step-up-communication-says-Certified-Sustainable.webp'], ['Garments', 'images-3.webp'], ['Baby Care', 'images-2.webp'], ['Mobile Accessories', 'download-2.webp'], ['Flower', 'download-4.webp'], ['Paan Darbar', 'default-paan-shops-9.webp'], ['Ready Eatables', 'e1dad5315972c8a9db86fb01d69c7ecb-768x707.webp'], ['Fruits', 'pexels-jane-doan-1132047-1536x1152.webp'], ['Dessert', 'pexels-igor-ovsyannykov-205961-768x512.webp'], ['Bakery & Confectionary', 'download-6.webp'], ['Dairy', 'download-5.webp'], ['Groceries', 'download-8.webp'], ['Pharma', 'download-7.webp'], ['Sports Stuff', 'bigstock-Four-Sports-a-lot-of-balls-an-50626115-1024x512-1-768x384.webp'], ['Snacks & Beverage', 'download-1-1.webp'], ['Vegetable', 'download-9.webp'],
@@ -55,9 +56,11 @@ interface HomePageProps {
   onOpenShop: () => void;
   onCategorySelect: (categoryId: string) => void;
   onAddToCart?: (product: Product) => void;
+  banners?: Array<{ id: number; title: string; subtitle?: string | null; imageUrl: string; linkUrl?: string | null }>;
 }
 
-const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onAddToCart }: HomePageProps) => {
+const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onAddToCart, banners = [] }: HomePageProps) => {
+  const slides: BannerSlide[] = banners.length ? banners : fallbackBannerImages.map((imageUrl, id) => ({ id, title: 'Fuddins offer', imageUrl }));
   const [activeBanner, setActiveBanner] = useState(0);
   const [exitingBanner, setExitingBanner] = useState<number | null>(null);
   const [resettingBanner, setResettingBanner] = useState(false);
@@ -80,9 +83,9 @@ const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onA
     window.setTimeout(() => setExitingBanner(null), 720);
   };
   useEffect(() => {
-    const timer = window.setInterval(() => showBanner((activeBanner + 1) % bannerImages.length), 4500);
+    const timer = window.setInterval(() => showBanner((activeBanner + 1) % slides.length), 4500);
     return () => window.clearInterval(timer);
-  }, [activeBanner]);
+  }, [activeBanner, slides.length]);
   useEffect(() => {
     const useFallbackProductImage = (event: Event) => {
       const image = event.target as HTMLImageElement;
@@ -129,8 +132,8 @@ const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onA
   }, [products]);
   return <div className="home-page">
     <section className="home-banner" aria-label="Featured offers">
-      {bannerImages.map((src, index) => <img key={src} src={src} alt="Fuddins offer" className={index === activeBanner ? `is-active${resettingBanner ? ' is-resetting' : ''}` : index === exitingBanner ? 'is-exiting' : ''} />)}
-      <div className="banner-dots" role="tablist" aria-label="Choose offer banner">{bannerImages.map((_, index) => <button key={index} type="button" aria-label={`Show banner ${index + 1}`} aria-selected={index === activeBanner} className={index === activeBanner ? 'is-active' : ''} onClick={() => showBanner(index)} />)}</div>
+      {slides.map((slide, index) => <a key={slide.id} href={slide.linkUrl || undefined} onClick={(event) => { if (!slide.linkUrl) event.preventDefault(); }} aria-label={[slide.title, slide.subtitle].filter(Boolean).join(': ')} className={`home-banner-slide${index === activeBanner ? ` is-active${resettingBanner ? ' is-resetting' : ''}` : index === exitingBanner ? ' is-exiting' : ''}`} style={{ backgroundImage: `url("${resolveAssetUrl(slide.imageUrl)}")` } as CSSProperties}><span className="home-banner-caption"><b>{slide.title}</b>{slide.subtitle ? <small>{slide.subtitle}</small> : null}</span></a>)}
+      {slides.length > 1 ? <div className="banner-dots" role="tablist" aria-label="Choose offer banner">{slides.map((slide, index) => <button key={slide.id} type="button" aria-label={`Show banner ${index + 1}`} aria-selected={index === activeBanner} className={index === activeBanner ? 'is-active' : ''} onClick={() => showBanner(index)} />)}</div> : null}
     </section>
     <section className="category-showcase" aria-labelledby="categories-title">
       <div className="category-heading">

@@ -5,6 +5,8 @@ import type { AuthResponse } from './auth';
 import AdminPanel from './components/admin/AdminPanel';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminProfile from './components/admin/AdminProfile';
+import BannerManager from './components/admin/BannerManager';
+import { API_ORIGIN } from './config';
 import PartnerProfile from './components/shared/PartnerProfilePage';
 import AdvancedCommerceManager from './components/admin/AdvancedCommerceManager';
 import AccountCommercePanel from './components/customer/AccountCommercePanel';
@@ -102,6 +104,7 @@ const App = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [pages, setPages] = useState<Page[]>([]);
+  const [banners, setBanners] = useState<Array<{ id: number; title: string; subtitle?: string | null; imageUrl: string; linkUrl?: string | null }>>([]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
@@ -123,6 +126,7 @@ const App = () => {
       setProducts(productData);
       setCategories(categoryData);
       setPages(pageData);
+      try { const response = await fetch(`${API_ORIGIN}/banners`); if (response.ok) setBanners(await response.json()); } catch { setBanners([]); }
       setUsers(isAdmin ? await fetchUsers() : []);
     } catch (error) {
       console.error('Failed to load data', error);
@@ -220,7 +224,7 @@ const App = () => {
 
       <main>
         <Routes>
-          <Route path="/" element={<HomePage categories={categories} products={products} onOpenShop={() => navigate('/shop')} onCategorySelect={(categoryId) => { setSelectedCategory(categoryId); navigate('/shop'); }} onAddToCart={addToCart} />} />
+          <Route path="/" element={<HomePage categories={categories} products={products} banners={banners} onOpenShop={() => navigate('/shop')} onCategorySelect={(categoryId) => { setSelectedCategory(categoryId); navigate('/shop'); }} onAddToCart={addToCart} />} />
           <Route path="/shop" element={<ShopPage
             categories={categories} products={products} pages={visiblePages} cartItems={cartItems}
             search={search} selectedCategory={selectedCategory} selectedVariations={selectedVariations} loading={loading}
@@ -274,6 +278,7 @@ const App = () => {
             <Route path="categories" element={<div className="admin-grid"><CategoryManager categories={categories} onCategoryChanged={loadData} /></div>} />
             <Route path="orders" element={<div className="admin-grid"><OrdersPanel /></div>} />
             <Route path="coupons" element={<div className="admin-grid"><CouponManager /></div>} />
+            <Route path="banners" element={<BannerManager />} />
             <Route path="vendor-approvals" element={<VendorApprovalManager />} />
             <Route path="commerce" element={<div className="admin-grid"><AdvancedCommerceManager /></div>} />
             <Route path="delivery-team" element={<div className="admin-grid"><DeliveryTeamManager /></div>} />
