@@ -10,5 +10,10 @@ export function resolveAssetUrl(path?: string | null) {
     return path;
   }
 
+  // Files in Vite's public directory are served by the frontend host itself.
+  if (path.startsWith('/images/')) {
+    return path;
+  }
+
   return `${API_ORIGIN}${path.startsWith('/') ? path : `/${path}`}`;
 }
