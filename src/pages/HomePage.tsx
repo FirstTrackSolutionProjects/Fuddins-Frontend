@@ -20,7 +20,7 @@ const HomeProductCard = ({ product, onAddToCart }: { product: Product; onAddToCa
   const onImageError = (event: SyntheticEvent<HTMLImageElement>) => { event.currentTarget.src = '/images/e1dad5315972c8a9db86fb01d69c7ecb-768x707.webp'; };
   const onAdd = () => onAddToCart?.(selectedVariation ? { ...product, variations: JSON.stringify([selectedVariation]) } : product);
   return <article className="featured-product-card">
-    <div className="featured-product-image" role="button" tabIndex={0} onClick={() => navigate(`/product/${product.id}`)}>{currentPrice < originalPrice ? <span className="sale-badge">Sale!</span> : null}{imageSrc ? <img src={imageSrc} onError={onImageError} alt={product.name} /> : <span>No image</span>}</div>
+    <div className="featured-product-image" role="button" tabIndex={0} onClick={() => navigate(`/product/${product.id}`)}>{currentPrice < originalPrice ? <span className="sale-badge">Sale!</span> : null}{imageSrc ? <img src={imageSrc} onError={onImageError} alt={product.name} loading="lazy" decoding="async" /> : <span>No image</span>}</div>
     <p>{product.category?.name || 'Uncategorized'}</p><h3 role="button" tabIndex={0} onClick={() => navigate(`/product/${product.id}`)}>{product.name}</h3>
     <strong>{currentPrice < originalPrice ? <><s>₹{originalPrice.toFixed(2)}</s> </> : null}₹{currentPrice.toFixed(2)}</strong>
     {variations.length ? <div className="product-variation-options">{variations.map((variation) => <button key={variation.id} type="button" className={variation.id === selectedVariation?.id ? 'is-selected' : ''} onClick={() => setSelectedVariationId(variation.id)}>{variationLabel(variation)}</button>)}</div> : null}

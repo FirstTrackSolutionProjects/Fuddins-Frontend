@@ -90,7 +90,7 @@ const LegacyShopPage = ({ categories, products, pages, cartItems, search, select
             return (
               <article key={product.id} className="rounded-lg border border-neutral-100 p-3.5 text-center">
                 <div role="button" tabIndex={0} onClick={() => navigate(`/product/${product.id}`)} className="mb-3 flex h-[170px] cursor-pointer items-center justify-center overflow-hidden rounded-md bg-neutral-50">
-                  {imageSrc ? <img src={imageSrc} alt={product.name} className="h-full w-full object-contain" /> : <span>No image</span>}
+                  {imageSrc ? <img src={imageSrc} alt={product.name} loading="lazy" decoding="async" className="h-full w-full object-contain" /> : <span>No image</span>}
                 </div>
                 <p className="m-0 mb-1.5 text-xs font-bold text-lime-600">{product.category?.name || 'Uncategorized'}</p>
                 <h2 role="button" tabIndex={0} onClick={() => navigate(`/product/${product.id}`)} className="m-0 min-h-[44px] cursor-pointer text-base leading-[1.35] text-neutral-900">{product.name}</h2>
@@ -213,7 +213,7 @@ const ShopPage = ({ categories, products, cartItems, search, selectedCategory, s
         return <article className="shop-product-card" key={product.id}>
           <div className="shop-product-image" role="button" tabIndex={0} onClick={openProduct} onKeyDown={(event) => event.key === 'Enter' && openProduct()}>
             {isOnSale(product, variation) ? <span className="sale-badge">Sale!</span> : null}
-            {imageSrc ? <img src={imageSrc} alt={product.name} /> : <span className="shop-no-image">No image</span>}
+            {imageSrc ? <img src={imageSrc} alt={product.name} loading="lazy" decoding="async" /> : <span className="shop-no-image">No image</span>}
           </div>
           <p className="shop-product-category">{product.category?.name || 'Uncategorized'}</p>
           <h2 role="button" tabIndex={0} onClick={openProduct} onKeyDown={(event) => event.key === 'Enter' && openProduct()}>{product.name}</h2>

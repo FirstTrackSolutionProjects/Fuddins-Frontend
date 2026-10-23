@@ -113,6 +113,7 @@ const App = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedVariations, setSelectedVariations] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
+  const [dataError, setDataError] = useState('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [openMenu, setOpenMenu] = useState<'products' | 'partner' | 'about' | null>(null);
 
@@ -121,18 +122,29 @@ const App = () => {
 
   const loadData = async () => {
     setLoading(true);
-    try {
-      const [productData, categoryData, pageData] = await Promise.all([fetchProducts(), fetchCategories(), fetchPages()]);
-      setProducts(productData);
-      setCategories(categoryData);
-      setPages(pageData);
-      try { const response = await fetch(`${API_ORIGIN}/banners`); if (response.ok) setBanners(await response.json()); } catch { setBanners([]); }
-      setUsers(isAdmin ? await fetchUsers() : []);
-    } catch (error) {
-      console.error('Failed to load data', error);
-    } finally {
-      setLoading(false);
+    setDataError('');
+    const [productResult, categoryResult, pageResult, bannerResult, userResult] = await Promise.allSettled([
+      fetchProducts().then((data) => { setProducts(data); return data; }),
+      fetchCategories().then((data) => { setCategories(data); return data; }),
+      fetchPages().then((data) => { setPages(data); return data; }),
+      fetch(`${API_ORIGIN}/banners`, { signal: AbortSignal.timeout(15_000) }).then(async (response) => {
+        if (!response.ok) throw new Error('Banners are temporarily unavailable');
+        return response.json();
+      }),
+      isAdmin ? fetchUsers() : Promise.resolve([]),
+    ]);
+    const failedResources: string[] = [];
+    if (productResult.status !== 'fulfilled') failedResources.push('products');
+    if (categoryResult.status !== 'fulfilled') failedResources.push('categories');
+    if (pageResult.status !== 'fulfilled') failedResources.push('pages');
+    if (bannerResult.status === 'fulfilled') setBanners(bannerResult.value);
+    if (userResult.status === 'fulfilled') setUsers(userResult.value);
+    if (failedResources.length) {
+      const message = `Could not load ${failedResources.join(', ')}. The server may be temporarily unavailable.`;
+      setDataError(message);
+      console.error(message, [productResult, categoryResult, pageResult]);
     }
+    setLoading(false);
   };
 
   const handleAuthenticated = (response: AuthResponse) => {
@@ -221,6 +233,13 @@ const App = () => {
         onOpenCategory={openCategory}
         onOpenCart={() => setIsCartOpen(true)}
       /> : null}
+
+      {location.pathname !== '/partner' && !location.pathname.startsWith('/admin') && (loading || dataError) ? (
+        <div className={`catalog-status ${dataError ? 'catalog-status-error' : ''}`} role={dataError ? 'alert' : 'status'} aria-live="polite">
+          <span>{dataError || 'Loading store…'}</span>
+          {dataError ? <button type="button" onClick={() => void loadData()}>Try again</button> : null}
+        </div>
+      ) : null}
 
       <main>
         <Routes>

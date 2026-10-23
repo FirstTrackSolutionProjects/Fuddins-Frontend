@@ -1,5 +1,7 @@
 import { API_BASE_URL, API_ORIGIN } from './config';
 
+const fetchWithTimeout = (url: string) => fetch(url, { signal: AbortSignal.timeout(15_000) });
+
 function authHeaders(): Record<string, string> {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -16,7 +18,7 @@ export async function fetchUsers() {
 }
 
 export async function fetchProducts() {
-  const response = await fetch(`${API_BASE_URL}/products`);
+  const response = await fetchWithTimeout(`${API_BASE_URL}/products`);
   if (!response.ok) {
     throw new Error('Failed to fetch products');
   }
@@ -24,7 +26,7 @@ export async function fetchProducts() {
 }
 
 export async function fetchCategories() {
-  const response = await fetch(`${API_ORIGIN}/categories`);
+  const response = await fetchWithTimeout(`${API_ORIGIN}/categories`);
   if (!response.ok) {
     throw new Error('Failed to fetch categories');
   }
@@ -42,7 +44,7 @@ export async function fetchOrders() {
 }
 
 export async function fetchPages() {
-  const response = await fetch(`${API_ORIGIN}/pages`);
+  const response = await fetchWithTimeout(`${API_ORIGIN}/pages`);
   if (!response.ok) {
     throw new Error('Failed to fetch pages');
   }
