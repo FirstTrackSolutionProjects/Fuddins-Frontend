@@ -24,7 +24,7 @@ const HomeProductCard = ({ product, onAddToCart }: { product: Product; onAddToCa
     <p>{product.category?.name || 'Uncategorized'}</p><h3 role="button" tabIndex={0} onClick={() => navigate(`/product/${product.id}`)}>{product.name}</h3>
     <strong>{currentPrice < originalPrice ? <><s>₹{originalPrice.toFixed(2)}</s> </> : null}₹{currentPrice.toFixed(2)}</strong>
     {variations.length ? <div className="product-variation-options">{variations.map((variation) => <button key={variation.id} type="button" className={variation.id === selectedVariation?.id ? 'is-selected' : ''} onClick={() => setSelectedVariationId(variation.id)}>{variationLabel(variation)}</button>)}</div> : null}
-    <button type="button" onClick={onAdd}>{variations.length ? 'SELECT OPTIONS' : 'ADD TO CART'}</button>
+    <button type="button" onClick={variations.length ? () => navigate(`/product/${product.id}`) : onAdd}>{variations.length ? 'SELECT OPTIONS' : 'ADD TO CART'}</button>
     <div className="product-store">Store: 🛍️ {product.vendor?.storeName || product.brand || 'Store unavailable'}</div><div className="product-stars">★★★★★</div>
   </article>;
 };

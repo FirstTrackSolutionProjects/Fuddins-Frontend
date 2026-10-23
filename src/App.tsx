@@ -183,6 +183,9 @@ const App = () => {
 
       return [...current, { product, variation, quantity: 1 }];
     });
+    // Show immediate confirmation on mobile and desktop instead of silently
+    // updating cart state while leaving the user on the product grid.
+    setIsCartOpen(true);
   };
 
   const updateCartQuantity = (key: string, quantity: number) => {
