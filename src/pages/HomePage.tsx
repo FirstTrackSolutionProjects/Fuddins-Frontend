@@ -257,7 +257,7 @@ const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onA
       {/* Banner slider */}
       {count ? (
         <section
-          className="w-full"
+          className="w-full px-3 sm:px-5"
           aria-label="Featured offers"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
