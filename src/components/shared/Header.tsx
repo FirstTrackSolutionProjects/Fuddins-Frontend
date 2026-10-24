@@ -652,31 +652,31 @@ const Header = ({
         </div>
       </div>
 
-      <div className="border-y border-lime-100 bg-gradient-to-b from-lime-50/70 to-white" aria-label="Featured product categories">
-        <div className="mx-auto max-w-[1400px] px-4 py-3 sm:px-6">
+      <div className="border-b border-lime-100 bg-gradient-to-b from-lime-50/60 to-white" aria-label="Featured product categories">
+        <div className="mx-auto max-w-3xl px-4 pb-2 pt-1 sm:px-6">
           <div className="overflow-hidden">
             <div
               className="flex w-[400%]"
               style={{ transform: `translateX(-${quickSet * 25}%)`, transition: resettingQuickSet ? 'none' : 'transform 700ms cubic-bezier(.65,0,.35,1)' }}
             >
               {[...quickCategorySets, quickCategorySets[0]].map((set, setIndex) => (
-                <div className="grid w-1/4 shrink-0 grid-cols-4 gap-3 px-0.5 py-1 sm:gap-6" key={setIndex}>
+                <div className="grid w-1/4 shrink-0 grid-cols-4 items-center" key={setIndex}>
                   {set.map(([name, image]) => (
                     <button
                       type="button"
                       key={name}
                       aria-label={name}
                       onClick={() => openQuickCategory(name)}
-                      className="group grid place-items-center rounded-2xl bg-white p-2 shadow-sm ring-1 ring-lime-100 transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-lime-700/10 hover:ring-lime-300 sm:p-3"
+                      className="group grid place-items-center rounded-2xl py-1 transition duration-300 hover:-translate-y-1"
                     >
-                      <img src={`/images/${image}`} alt={name} className="h-16 w-16 object-contain transition duration-300 group-hover:scale-110 sm:h-28 sm:w-28" />
+                      <img src={`/images/${image}`} alt={name} className="h-24 w-24 object-contain drop-shadow-sm transition duration-300 group-hover:scale-110 sm:h-32 sm:w-32" />
                     </button>
                   ))}
                 </div>
               ))}
             </div>
           </div>
-          <div className="mt-2 flex justify-center gap-1.5" aria-hidden="true">
+          <div className="flex justify-center gap-1.5" aria-hidden="true">
             {quickCategorySets.map((_, dotIndex) => (
               <span
                 key={dotIndex}
