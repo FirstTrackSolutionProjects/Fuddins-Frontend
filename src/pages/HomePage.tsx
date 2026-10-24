@@ -44,7 +44,7 @@ const fallbackBannerImages = [
   '/images/WE-ARE-PROUD-TO-INTRODUCE-1-scaled.webp',
   '/images/WE-ARE-PROUD-TO-INTRODUCE-2-scaled.webp',
 ];
-type BannerSlide = { id: number; title: string; subtitle?: string | null; imageUrl: string; linkUrl?: string | null };
+type BannerSlide = { id: number | string; title: string; subtitle?: string | null; imageUrl: string; linkUrl?: string | null };
 
 const showcaseCategories = [
   ['Beauty & Cosmetic', 'Waste-management-in-beauty-can-be-improved-if-brands-add-value-and-step-up-communication-says-Certified-Sustainable.webp'], ['Garments', 'images-3.webp'], ['Baby Care', 'images-2.webp'], ['Mobile Accessories', 'download-2.webp'], ['Flower', 'download-4.webp'], ['Paan Darbar', 'default-paan-shops-9.webp'], ['Ready Eatables', 'e1dad5315972c8a9db86fb01d69c7ecb-768x707.webp'], ['Fruits', 'pexels-jane-doan-1132047-1536x1152.webp'], ['Dessert', 'pexels-igor-ovsyannykov-205961-768x512.webp'], ['Bakery & Confectionary', 'download-6.webp'], ['Dairy', 'download-5.webp'], ['Groceries', 'download-8.webp'], ['Pharma', 'download-7.webp'], ['Sports Stuff', 'bigstock-Four-Sports-a-lot-of-balls-an-50626115-1024x512-1-768x384.webp'], ['Snacks & Beverage', 'download-1-1.webp'], ['Vegetable', 'download-9.webp'],
@@ -56,16 +56,29 @@ interface HomePageProps {
   onOpenShop: () => void;
   onCategorySelect: (categoryId: string) => void;
   onAddToCart?: (product: Product) => void;
-  banners?: Array<{ id: number; title: string; subtitle?: string | null; imageUrl: string; linkUrl?: string | null }>;
+  banners?: Array<{ id: number | string; title: string; subtitle?: string | null; imageUrl: string; linkUrl?: string | null }>;
 }
 
 const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onAddToCart, banners = [] }: HomePageProps) => {
-  const slides: BannerSlide[] = banners.length ? banners : fallbackBannerImages.map((imageUrl, id) => ({ id, title: 'Fuddins offer', imageUrl }));
+  const homepageBanners = banners.filter((banner) => !String(banner.id).startsWith('vendor-'));
+  const slides: BannerSlide[] = homepageBanners.length ? homepageBanners : fallbackBannerImages.map((imageUrl, id) => ({ id, title: 'Fuddins offer', imageUrl }));
+  const renderedSlides = slides.length > 1 ? [...slides, { ...slides[0], id: `${slides[0].id}-loop` }] : slides;
   const [activeBanner, setActiveBanner] = useState(0);
   const [exitingBanner, setExitingBanner] = useState<number | null>(null);
   const [resettingBanner, setResettingBanner] = useState(false);
   const showBanner = (nextBanner: number) => {
     if (nextBanner === activeBanner) return;
+    if (nextBanner === slides.length) {
+      setExitingBanner(activeBanner);
+      setActiveBanner(nextBanner);
+      window.setTimeout(() => {
+        setExitingBanner(null);
+        setResettingBanner(true);
+        setActiveBanner(0);
+        window.setTimeout(() => setResettingBanner(false), 120);
+      }, 720);
+      return;
+    }
     // The final banner cannot transition directly to the first with this
     // stacked-slider layout; doing so makes it enter from the right. Reset it
     // without a transform transition, while every normal step slides left.
@@ -83,7 +96,7 @@ const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onA
     window.setTimeout(() => setExitingBanner(null), 720);
   };
   useEffect(() => {
-    const timer = window.setInterval(() => showBanner((activeBanner + 1) % slides.length), 4500);
+    const timer = window.setInterval(() => showBanner(activeBanner + 1), 4500);
     return () => window.clearInterval(timer);
   }, [activeBanner, slides.length]);
   useEffect(() => {
@@ -132,8 +145,8 @@ const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onA
   }, [products]);
   return <div className="home-page">
     <section className="home-banner" aria-label="Featured offers">
-      {slides.map((slide, index) => <a key={slide.id} href={slide.linkUrl || undefined} onClick={(event) => { if (!slide.linkUrl) event.preventDefault(); }} aria-label={[slide.title, slide.subtitle].filter(Boolean).join(': ')} className={`home-banner-slide${index === activeBanner ? ` is-active${resettingBanner ? ' is-resetting' : ''}` : index === exitingBanner ? ' is-exiting' : ''}`} style={{ backgroundImage: `url("${resolveAssetUrl(slide.imageUrl)}")` } as CSSProperties}><span className="home-banner-caption"><b>{slide.title}</b>{slide.subtitle ? <small>{slide.subtitle}</small> : null}</span></a>)}
-      {slides.length > 1 ? <div className="banner-dots" role="tablist" aria-label="Choose offer banner">{slides.map((slide, index) => <button key={slide.id} type="button" aria-label={`Show banner ${index + 1}`} aria-selected={index === activeBanner} className={index === activeBanner ? 'is-active' : ''} onClick={() => showBanner(index)} />)}</div> : null}
+      {renderedSlides.map((slide, index) => <a key={slide.id} href={slide.linkUrl || undefined} onClick={(event) => { if (!slide.linkUrl) event.preventDefault(); }} aria-label={[slide.title, slide.subtitle].filter(Boolean).join(': ')} className={`home-banner-slide${index === activeBanner ? ` is-active${resettingBanner ? ' is-resetting' : ''}` : index === exitingBanner ? ' is-exiting' : ''}`} style={{ backgroundImage: `url("${resolveAssetUrl(slide.imageUrl)}")` } as CSSProperties}><span className="home-banner-caption"><b>{slide.title}</b>{slide.subtitle ? <small>{slide.subtitle}</small> : null}</span></a>)}
+      {slides.length > 1 ? <div className="banner-dots" role="tablist" aria-label="Choose offer banner">{slides.map((slide, index) => <button key={slide.id} type="button" aria-label={`Show banner ${index + 1}`} aria-selected={index === activeBanner % slides.length} className={index === activeBanner % slides.length ? 'is-active' : ''} onClick={() => showBanner(index)} />)}</div> : null}
     </section>
     <section className="category-showcase" aria-labelledby="categories-title">
       <div className="category-heading">

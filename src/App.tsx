@@ -104,7 +104,7 @@ const App = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [pages, setPages] = useState<Page[]>([]);
-  const [banners, setBanners] = useState<Array<{ id: number; title: string; subtitle?: string | null; imageUrl: string; linkUrl?: string | null }>>([]);
+  const [banners, setBanners] = useState<Array<{ id: number | string; title: string; subtitle?: string | null; imageUrl: string; linkUrl?: string | null }>>([]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
