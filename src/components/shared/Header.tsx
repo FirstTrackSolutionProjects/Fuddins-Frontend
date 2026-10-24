@@ -211,6 +211,8 @@ const quickCategorySets = [
   [['Snacks', 'Groceries-5-150x150.webp'], ['Pharma', 'Groceries-10-150x150.webp'], ['Garments', 'Groceries-16-150x150.webp'], ['Groceries', 'Groceries-1-150x150.webp']],
 ] as const;
 
+const quickCategories = quickCategorySets.flatMap((set) => [...set]);
+
 const Header = ({
   currentUser,
   categories,
@@ -227,28 +229,8 @@ const Header = ({
 }: HeaderProps) => {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
-  const [quickSet, setQuickSet] = useState(0);
-  const [resettingQuickSet, setResettingQuickSet] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSubMenu, setMobileSubMenu] = useState<MobileMenuKey | null>(null);
-  useEffect(() => {
-    const timer = window.setInterval(() => setQuickSet((current) => current + 1), 4000);
-    return () => window.clearInterval(timer);
-  }, []);
-  useEffect(() => {
-    // The final rendered set is a duplicate of the first. Slide to it from
-    // right-to-left, then jump back to the real first set with no transition.
-    if (quickSet !== quickCategorySets.length) return;
-    const resetTimer = window.setTimeout(() => {
-      setResettingQuickSet(true);
-      setQuickSet(0);
-      // Hold the reset long enough for the browser to paint the duplicated
-      // final frame without a transition, preventing the wrap from flipping
-      // back in from the right.
-      window.setTimeout(() => setResettingQuickSet(false), 120);
-    }, 720);
-    return () => window.clearTimeout(resetTimer);
-  }, [quickSet]);
   const openQuickCategory = (name: string) => {
     const simplify = (value: string) => value.toLowerCase().replace(/[^a-z]/g, '');
     const label = simplify(name);
@@ -279,7 +261,8 @@ const Header = ({
       <style>{`
         @keyframes fuddins-pop { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
         .fuddins-pop { animation: fuddins-pop .18s ease-out both; }
-        @media (prefers-reduced-motion: reduce) { .fuddins-pop { animation: none; } }
+        @keyframes fuddins-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        @media (prefers-reduced-motion: reduce) { .fuddins-pop, .fuddins-marquee { animation: none; } }
       `}</style>
       <div className="mobile-site-header mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-5" style={{ width: '100%', maxWidth: '1500px', minWidth: 0 }}>
         <div className="mobile-logo-frame" style={{ width: 112, height: 56, minWidth: 0, overflow: 'hidden' }}>
@@ -653,35 +636,23 @@ const Header = ({
       </div>
 
       <div className="border-b border-lime-100 bg-gradient-to-b from-lime-50/60 to-white" aria-label="Featured product categories">
-        <div className="mx-auto max-w-3xl px-4 pb-2 pt-1 sm:px-6">
-          <div className="overflow-hidden">
-            <div
-              className="flex w-[400%]"
-              style={{ transform: `translateX(-${quickSet * 25}%)`, transition: resettingQuickSet ? 'none' : 'transform 700ms cubic-bezier(.65,0,.35,1)' }}
-            >
-              {[...quickCategorySets, quickCategorySets[0]].map((set, setIndex) => (
-                <div className="grid w-1/4 shrink-0 grid-cols-4 items-center" key={setIndex}>
-                  {set.map(([name, image]) => (
-                    <button
-                      type="button"
-                      key={name}
-                      aria-label={name}
-                      onClick={() => openQuickCategory(name)}
-                      className="group grid place-items-center rounded-2xl py-1 transition duration-300 hover:-translate-y-1"
-                    >
-                      <img src={`/images/${image}`} alt={name} className="h-24 w-24 object-contain drop-shadow-sm transition duration-300 group-hover:scale-110 sm:h-32 sm:w-32" />
-                    </button>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="flex justify-center gap-1.5" aria-hidden="true">
-            {quickCategorySets.map((_, dotIndex) => (
-              <span
-                key={dotIndex}
-                className={`h-1.5 rounded-full transition-all duration-300 ${dotIndex === quickSet % quickCategorySets.length ? 'w-5 bg-lime-500' : 'w-1.5 bg-lime-200'}`}
-              />
+        <div className="relative mx-auto max-w-[1500px] overflow-hidden py-1 [-webkit-mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)] [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
+          <div className="fuddins-marquee flex w-max animate-[fuddins-marquee_45s_linear_infinite] hover:[animation-play-state:paused]">
+            {[0, 1].map((copy) => (
+              <div className="flex shrink-0" key={copy} aria-hidden={copy === 1}>
+                {quickCategories.map(([name, image]) => (
+                  <button
+                    type="button"
+                    key={`${copy}-${name}`}
+                    tabIndex={copy === 1 ? -1 : 0}
+                    aria-label={name}
+                    onClick={() => openQuickCategory(name)}
+                    className="group grid w-28 shrink-0 place-items-center rounded-2xl py-1 transition duration-300 hover:-translate-y-1 sm:w-40"
+                  >
+                    <img src={`/images/${image}`} alt={name} className="h-20 w-20 object-contain drop-shadow-sm transition duration-300 group-hover:scale-110 sm:h-28 sm:w-28" />
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
         </div>
