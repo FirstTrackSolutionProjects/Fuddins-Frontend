@@ -39,11 +39,6 @@ const ProductSection = ({ title, products, onAddToCart, alwaysShow = false }: { 
   </section>;
 };
 
-const fallbackBannerImages = [
-  '/images/WhatsApp-Image-2023-03-09-at-1.34.26-PM.webp',
-  '/images/WE-ARE-PROUD-TO-INTRODUCE-1-scaled.webp',
-  '/images/WE-ARE-PROUD-TO-INTRODUCE-2-scaled.webp',
-];
 type BannerSlide = { id: number | string; title: string; subtitle?: string | null; imageUrl: string; linkUrl?: string | null };
 
 const showcaseCategories = [
@@ -61,7 +56,7 @@ interface HomePageProps {
 
 const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onAddToCart, banners = [] }: HomePageProps) => {
   const homepageBanners = banners.filter((banner) => !String(banner.id).startsWith('vendor-'));
-  const slides: BannerSlide[] = homepageBanners.length ? homepageBanners : fallbackBannerImages.map((imageUrl, id) => ({ id, title: 'Fuddins offer', imageUrl }));
+  const slides: BannerSlide[] = homepageBanners;
   const renderedSlides = slides.length > 1 ? [...slides, { ...slides[0], id: `${slides[0].id}-loop` }] : slides;
   const [activeBanner, setActiveBanner] = useState(0);
   const [exitingBanner, setExitingBanner] = useState<number | null>(null);
@@ -96,6 +91,7 @@ const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onA
     window.setTimeout(() => setExitingBanner(null), 720);
   };
   useEffect(() => {
+    if (slides.length < 2) return;
     const timer = window.setInterval(() => showBanner(activeBanner + 1), 4500);
     return () => window.clearInterval(timer);
   }, [activeBanner, slides.length]);
@@ -144,10 +140,10 @@ const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onA
     });
   }, [products]);
   return <div className="home-page">
-    <section className="home-banner" aria-label="Featured offers">
+    {slides.length ? <section className="home-banner" aria-label="Featured offers">
       {renderedSlides.map((slide, index) => <a key={slide.id} href={slide.linkUrl || undefined} onClick={(event) => { if (!slide.linkUrl) event.preventDefault(); }} aria-label={[slide.title, slide.subtitle].filter(Boolean).join(': ')} className={`home-banner-slide${index === activeBanner ? ` is-active${resettingBanner ? ' is-resetting' : ''}` : index === exitingBanner ? ' is-exiting' : ''}`} style={{ backgroundImage: `url("${resolveAssetUrl(slide.imageUrl)}")` } as CSSProperties}><span className="home-banner-caption"><b>{slide.title}</b>{slide.subtitle ? <small>{slide.subtitle}</small> : null}</span></a>)}
       {slides.length > 1 ? <div className="banner-dots" role="tablist" aria-label="Choose offer banner">{slides.map((slide, index) => <button key={slide.id} type="button" aria-label={`Show banner ${index + 1}`} aria-selected={index === activeBanner % slides.length} className={index === activeBanner % slides.length ? 'is-active' : ''} onClick={() => showBanner(index)} />)}</div> : null}
-    </section>
+    </section> : null}
     <section className="category-showcase" aria-labelledby="categories-title">
       <div className="category-heading">
         <h1 id="categories-title">Explore By Categories</h1>
