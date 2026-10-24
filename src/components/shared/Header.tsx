@@ -17,6 +17,7 @@ interface HeaderProps {
   onToggleMenu: (menu: MenuKey) => void;
   onOpenCategory: (categoryId: string) => void;
   onOpenCart: () => void;
+  onLogout?: () => void;
 }
 
 // Lime-accent link (Home, Refer & Earn, Log In)
@@ -83,6 +84,7 @@ const ICONS = {
   x: 'M18 6 6 18 M6 6l12 12',
   menu: 'M4 6h16 M4 12h16 M4 18h16',
   login: 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4 M10 17l5-5-5-5 M15 12H3',
+  logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9',
 } as const;
 
 // Single row (link) in the sidebar
@@ -202,6 +204,7 @@ const Header = ({
   onToggleMenu,
   onOpenCategory,
   onOpenCart,
+  onLogout,
 }: HeaderProps) => {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
@@ -564,8 +567,25 @@ const Header = ({
             </nav>
 
             {/* footer */}
-            <div className="border-t border-neutral-100 bg-neutral-50 px-5 py-3.5 text-center text-xs font-medium text-neutral-500">
-              Fuddins Mart · Food &amp; essentials at your doorstep
+            <div className="border-t border-neutral-100 bg-neutral-50">
+              {currentUser && onLogout ? (
+                <div className="px-4 pb-1 pt-3.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMobile();
+                      onLogout();
+                    }}
+                    className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-red-200 bg-red-50 py-3 text-[15px] font-bold text-red-600 transition hover:bg-red-100 active:scale-[0.98]"
+                  >
+                    <Ico d={ICONS.logout} className="h-5 w-5" />
+                    Log out
+                  </button>
+                </div>
+              ) : null}
+              <p className="px-5 py-3 text-center text-xs font-medium text-neutral-500">
+                Fuddins Mart · Food &amp; essentials at your doorstep
+              </p>
             </div>
           </aside>
         </div>
