@@ -257,12 +257,12 @@ const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onA
       {/* Banner slider */}
       {count ? (
         <section
-          className="mx-auto w-full max-w-[1400px] px-4 pt-2 sm:px-6"
+          className="w-full"
           aria-label="Featured offers"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
-          <div className="relative overflow-hidden rounded-3xl bg-white shadow-2xl shadow-neutral-900/10 ring-1 ring-neutral-100">
+          <div className="relative overflow-hidden bg-white">
             <div
               className="flex items-center"
               style={{

@@ -623,7 +623,7 @@ const Header = ({
         </div>
       ) : null}
 
-      {isHomePage ? <><div className="mx-auto mb-7 max-w-[1100px] px-5">
+      {isHomePage ? <><div className="mx-auto mb-4 max-w-[1100px] px-5">
         <div className="relative w-full">
           <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-lime-600">
             <svg
@@ -652,17 +652,38 @@ const Header = ({
         </div>
       </div>
 
-      <div className="quick-category-carousel" aria-label="Featured product categories">
-        <div className="quick-category-track" style={{ transform: `translateX(-${quickSet * 25}%)`, transition: resettingQuickSet ? 'none' : undefined }}>
-          {[...quickCategorySets, quickCategorySets[0]].map((set, setIndex) => (
-            <div className="quick-category-set" key={setIndex}>
-              {set.map(([name, image]) => (
-                <button type="button" key={name} onClick={() => openQuickCategory(name)}>
-                  <img src={`/images/${image}`} alt="" />
-                </button>
+      <div className="border-y border-lime-100 bg-gradient-to-b from-lime-50/70 to-white" aria-label="Featured product categories">
+        <div className="mx-auto max-w-[1400px] px-4 py-3 sm:px-6">
+          <div className="overflow-hidden">
+            <div
+              className="flex w-[400%]"
+              style={{ transform: `translateX(-${quickSet * 25}%)`, transition: resettingQuickSet ? 'none' : 'transform 700ms cubic-bezier(.65,0,.35,1)' }}
+            >
+              {[...quickCategorySets, quickCategorySets[0]].map((set, setIndex) => (
+                <div className="grid w-1/4 shrink-0 grid-cols-4 gap-3 px-0.5 py-1 sm:gap-6" key={setIndex}>
+                  {set.map(([name, image]) => (
+                    <button
+                      type="button"
+                      key={name}
+                      aria-label={name}
+                      onClick={() => openQuickCategory(name)}
+                      className="group grid place-items-center rounded-2xl bg-white p-2 shadow-sm ring-1 ring-lime-100 transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-lime-700/10 hover:ring-lime-300 sm:p-3"
+                    >
+                      <img src={`/images/${image}`} alt={name} className="h-16 w-16 object-contain transition duration-300 group-hover:scale-110 sm:h-28 sm:w-28" />
+                    </button>
+                  ))}
+                </div>
               ))}
             </div>
-          ))}
+          </div>
+          <div className="mt-2 flex justify-center gap-1.5" aria-hidden="true">
+            {quickCategorySets.map((_, dotIndex) => (
+              <span
+                key={dotIndex}
+                className={`h-1.5 rounded-full transition-all duration-300 ${dotIndex === quickSet % quickCategorySets.length ? 'w-5 bg-lime-500' : 'w-1.5 bg-lime-200'}`}
+              />
+            ))}
+          </div>
         </div>
       </div></> : null}
     </header>
