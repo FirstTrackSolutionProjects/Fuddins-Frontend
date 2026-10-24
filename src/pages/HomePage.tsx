@@ -262,9 +262,9 @@ const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onA
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
-          <div className="relative overflow-hidden rounded-3xl bg-neutral-100 shadow-2xl shadow-neutral-900/10 ring-1 ring-neutral-100">
+          <div className="relative overflow-hidden rounded-3xl bg-white shadow-2xl shadow-neutral-900/10 ring-1 ring-neutral-100">
             <div
-              className="flex"
+              className="flex items-center"
               style={{
                 transform: `translateX(-${index * 100}%)`,
                 transition: animate ? 'transform 700ms cubic-bezier(.65,0,.35,1)' : 'none',
@@ -276,13 +276,13 @@ const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onA
                   href={slide.linkUrl || undefined}
                   onClick={(event) => { if (!slide.linkUrl) event.preventDefault(); }}
                   aria-label={[slide.title, slide.subtitle].filter(Boolean).join(': ')}
-                  className="relative block aspect-[16/9] w-full shrink-0 sm:aspect-[2/1]"
+                  className="relative block w-full shrink-0"
                 >
                   <img
                     src={resolveAssetUrl(slide.imageUrl) || undefined}
                     alt=""
                     draggable={false}
-                    className="h-full w-full object-cover"
+                    className="block h-auto w-full select-none"
                   />
                   <span className="sr-only">
                     <b>{slide.title}</b>
@@ -292,10 +292,8 @@ const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onA
               ))}
             </div>
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/25 to-transparent" />
-
             {count > 1 ? (
-              <div className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-2 sm:bottom-4" role="tablist" aria-label="Choose offer banner">
+              <div className="flex items-center justify-center gap-2 bg-white py-3" role="tablist" aria-label="Choose offer banner">
                 {slides.map((slide, dotIndex) => (
                   <button
                     key={slide.id}
@@ -305,7 +303,7 @@ const HomePage = ({ categories, products = [], onOpenShop, onCategorySelect, onA
                     aria-selected={dotIndex === activeDot}
                     onClick={() => showBanner(dotIndex)}
                     className={`h-2.5 rounded-full transition-all duration-300 ${
-                      dotIndex === activeDot ? 'w-8 bg-lime-400 shadow-md' : 'w-2.5 bg-white/70 hover:bg-white'
+                      dotIndex === activeDot ? 'w-8 bg-lime-500' : 'w-2.5 bg-neutral-300 hover:bg-neutral-400'
                     }`}
                   />
                 ))}
