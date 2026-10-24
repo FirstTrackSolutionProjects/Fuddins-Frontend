@@ -103,7 +103,7 @@ const ProductCard = ({ product, selectedVariationId, isInCart, onOpen, onVariati
         ) : null}
         {showImage ? (
           <img
-            src={imageSrc}
+            src={imageSrc || undefined}
             alt={product.name}
             loading="lazy"
             decoding="async"
