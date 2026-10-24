@@ -1,20 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { API_ORIGIN } from '../config';
+import { loginUser, type AuthResponse } from '../auth';
 import type { CartItem } from '../types';
 
-interface CheckoutPageProps { cartItems: CartItem[]; couponCode: string; discount: number; onOrderPlaced: () => void; }
+interface CheckoutPageProps { cartItems: CartItem[]; couponCode: string; discount: number; onOrderPlaced: () => void; onAuthenticated: (response: AuthResponse) => void; }
 const COUNTRIES = ['Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cambodia', 'Cameroon', 'Canada', 'Cape Verde', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo', 'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czech Republic', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guyana', 'Haiti', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Korea', 'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa', 'South Korea', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe'];
 const INDIAN_STATES = ['Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chandigarh', 'Chhattisgarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jammu and Kashmir', 'Jharkhand', 'Karnataka', 'Kerala', 'Ladakh', 'Lakshadweep', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Puducherry', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'];
 const INDIAN_CITIES = ['Agra', 'Ahmedabad', 'Bengaluru', 'Bhopal', 'Bhubaneswar', 'Chandigarh', 'Chennai', 'Cuttack', 'Dehradun', 'Delhi', 'Faridabad', 'Ghaziabad', 'Gurugram', 'Guwahati', 'Hyderabad', 'Indore', 'Jaipur', 'Kanpur', 'Kochi', 'Kolkata', 'Lucknow', 'Ludhiana', 'Mumbai', 'Mysuru', 'Nagpur', 'Noida', 'Patna', 'Pune', 'Puri', 'Raipur', 'Ranchi', 'Sambalpur', 'Siliguri', 'Surat', 'Thiruvananthapuram', 'Varanasi', 'Visakhapatnam'];
 const itemPrice = (item: CartItem) => Number(item.variation?.salePrice || item.variation?.price || item.product.salePrice || item.product.price || 0);
 const variationLabel = (item: CartItem) => Object.values(item.variation?.attributes || {}).filter(Boolean).join(' / ') || item.variation?.title || '';
 
-const CheckoutPage = ({ cartItems, couponCode, discount, onOrderPlaced }: CheckoutPageProps) => {
+const CheckoutPage = ({ cartItems, couponCode, discount, onOrderPlaced, onAuthenticated }: CheckoutPageProps) => {
   const [form, setForm] = useState({ firstName: '', lastName: '', company: '', country: 'India', address: '', apartment: '', city: '', state: 'Odisha', pin: '', phone: '', email: '', notes: '' });
   const [shipping, setShipping] = useState({ firstName: '', lastName: '', company: '', country: 'India', address: '', apartment: '', city: '', state: 'Odisha', pin: '' });
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
   const [showCoupon, setShowCoupon] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginBusy, setLoginBusy] = useState(false);
   const [shipDifferent, setShipDifferent] = useState(false);
   const [message, setMessage] = useState('');
   const [walletBalance, setWalletBalance] = useState(0);
@@ -27,9 +32,38 @@ const CheckoutPage = ({ cartItems, couponCode, discount, onOrderPlaced }: Checko
   const appliedWallet = useWallet ? Math.min(Math.max(Number(walletAmount || maxWalletAmount), 0), maxWalletAmount) : 0;
   const total = Math.max(0, totalBeforeWallet - appliedWallet);
   const walletCoversOrder = total <= 0.001;
-  useEffect(() => { const token = localStorage.getItem('token'); if (!token) return; fetch(`${API_ORIGIN}/customer/wallet`, { headers: { Authorization: `Bearer ${token}` } }).then((response) => response.ok ? response.json() : null).then((data) => { if (data) setWalletBalance(Number(data.balance || 0)); }).catch(() => undefined); }, []);
+  useEffect(() => { const token = localStorage.getItem('token'); if (!token) return; fetch(`${API_ORIGIN}/customer/wallet`, { headers: { Authorization: `Bearer ${token}` } }).then((response) => response.ok ? response.json() : null).then((data) => { if (data) setWalletBalance(Number(data.balance || 0)); }).catch(() => undefined); fetch(`${API_ORIGIN}/customer/profile`, { headers: { Authorization: `Bearer ${token}` } }).then((response) => response.ok ? response.json() : null).then((profile) => { if (!profile) return; const [firstName = '', ...lastNameParts] = (profile.name || '').trim().split(/\s+/); const savedShipping = typeof profile.shippingAddress === 'string' ? profile.shippingAddress.split(',').map((part: string) => part.trim()) : []; setForm((current) => ({ ...current, firstName: current.firstName || firstName, lastName: current.lastName || lastNameParts.join(' '), email: current.email || profile.email || '', phone: current.phone || profile.phone || '', address: current.address || profile.billingAddress || '' })); if (savedShipping.length > 1) setShipping((current) => ({ ...current, firstName: firstName || current.firstName, lastName: lastNameParts.join(' ') || current.lastName, address: savedShipping[0] || current.address, city: savedShipping.length > 2 ? savedShipping[savedShipping.length - 3] : current.city, pin: savedShipping.length > 1 ? savedShipping[savedShipping.length - 2] : current.pin })); }).catch(() => undefined); }, []);
   const setField = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const setShippingField = (key: keyof typeof shipping, value: string) => setShipping((current) => ({ ...current, [key]: value }));
+
+  const handleReturningCustomerLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoginBusy(true);
+    setMessage('');
+    try {
+      const response = await loginUser({ email: loginEmail.trim(), password: loginPassword });
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      onAuthenticated(response);
+      const [firstName = '', ...lastNameParts] = (response.user.name || '').trim().split(/\s+/);
+      const profileResponse = await fetch(`${API_ORIGIN}/customer/profile`, { headers: { Authorization: `Bearer ${response.token}` } });
+      const profile = profileResponse.ok ? await profileResponse.json() : null;
+      setForm((current) => ({ ...current, firstName, lastName: lastNameParts.join(' '), email: response.user.email || current.email, phone: response.user.phone || current.phone, address: current.address || profile?.billingAddress || '' }));
+      if (profile?.shippingAddress) {
+        const savedShipping = String(profile.shippingAddress).split(',').map((part: string) => part.trim());
+        if (savedShipping.length > 1) setShipping((current) => ({ ...current, firstName, lastName: lastNameParts.join(' '), address: savedShipping[0], city: savedShipping.length > 2 ? savedShipping[savedShipping.length - 3] : current.city, pin: savedShipping.length > 1 ? savedShipping[savedShipping.length - 2] : current.pin }));
+      }
+      const walletResponse = await fetch(`${API_ORIGIN}/customer/wallet`, { headers: { Authorization: `Bearer ${response.token}` } });
+      if (walletResponse.ok) { const wallet = await walletResponse.json(); setWalletBalance(Number(wallet.balance || 0)); }
+      setShowLogin(false);
+      setLoginPassword('');
+      setMessage('You are signed in. Your checkout details have been filled where available.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Unable to sign in. Check your email and password.');
+    } finally {
+      setLoginBusy(false);
+    }
+  };
 
   const placeOrder = async () => {
     if (!cartItems.length) { setMessage('Your cart is empty.'); return; }
@@ -51,7 +85,7 @@ const CheckoutPage = ({ cartItems, couponCode, discount, onOrderPlaced }: Checko
   };
 
   return <section className="checkout-page"><h1>Checkout</h1>
-    <div className="checkout-notice">Returning customer? <button type="button" onClick={() => setShowLogin((value) => !value)}>Click here to login</button>{showLogin ? <div className="checkout-login"><p>If you have shopped with us before, please enter your details below. If you are a new customer, please proceed to the Billing section.</p><div className="checkout-two"><label>Phone or Email address *<input type="text" autoComplete="username" /></label><label>Password *<input type="password" autoComplete="current-password" /></label></div><label className="login-remember"><input type="checkbox" /> Remember me</label><div className="login-actions"><button type="button">LOGIN</button><button type="button" className="lost-password">Lost your password?</button></div><div className="otp-login"><button type="button">LOGIN WITH OTP</button><label>Phone *<div><select><option>IN +91</option><option>BD +880</option><option>US +1</option></select><input placeholder="Phone number" inputMode="tel" /></div></label><div className="otp-actions"><button type="button">LOGIN WITH OTP</button><button type="button">LOGIN WITH EMAIL &amp; PASSWORD</button></div></div></div> : null}</div>
+    <div className="checkout-notice">Returning customer? <button type="button" onClick={() => setShowLogin((value) => !value)}>Click here to login</button>{showLogin ? <form className="checkout-login" onSubmit={(event) => void handleReturningCustomerLogin(event)}><p>Sign in to fill your customer details before placing this order.</p><div className="checkout-two"><label>Email address *<input type="email" autoComplete="username" value={loginEmail} onChange={(event) => setLoginEmail(event.target.value)} required /></label><label>Password *<input type="password" autoComplete="current-password" value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} required /></label></div><div className="login-actions"><button type="submit" disabled={loginBusy}>{loginBusy ? 'SIGNING IN…' : 'LOGIN'}</button><Link className="lost-password" to="/account">Forgot password?</Link></div><p>Create a new account from <Link to="/account">My Account</Link>, or continue checkout as a guest.</p></form> : null}</div>
     <div className="checkout-notice">Have a coupon? <button type="button" onClick={() => setShowCoupon((value) => !value)}>Click here to enter your code</button>{showCoupon ? <p>{couponCode ? `Applied coupon: ${couponCode}` : 'Apply your coupon from the Cart page before placing the order.'}</p> : null}</div>
     <div className="checkout-grid"><form className="billing-form" onSubmit={(event) => { event.preventDefault(); void placeOrder(); }}><h2>Billing details</h2>
       <div className="checkout-two"><label>First name *<input value={form.firstName} onChange={(event) => setField('firstName', event.target.value)} /></label><label>Last name *<input value={form.lastName} onChange={(event) => setField('lastName', event.target.value)} /></label></div>

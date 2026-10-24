@@ -35,6 +35,13 @@ const CartPage = ({ cartItems, onRemoveItem, onUpdateQuantity, couponCode, disco
       setCouponMessage(`Coupon ${result.code} applied — ₹${Number(result.discount || 0).toFixed(2)} saved.`);
     } catch (error) { setCouponMessage(error instanceof Error ? error.message : 'Coupon is not valid'); }
   };
+  const updateCart = async () => {
+    if (coupon.trim()) {
+      await applyCoupon();
+      return;
+    }
+    setCouponMessage('Cart updated. Quantities and totals are current.');
+  };
 
   return <section className="cart-page">
     <h1>Cart</h1>
@@ -58,7 +65,7 @@ const CartPage = ({ cartItems, onRemoveItem, onUpdateQuantity, couponCode, disco
             <strong>₹{(price * item.quantity).toFixed(2)}</strong>
           </article>;
         })}
-        <div className="cart-coupon-row"><div><input value={coupon} onChange={(event) => setCoupon(event.target.value)} placeholder="Coupon code" /><button type="button" onClick={() => void applyCoupon()}>APPLY COUPON</button>{couponMessage ? <small>{couponMessage}</small> : null}</div><button type="button" className="cart-update">UPDATE CART</button></div>
+        <div className="cart-coupon-row"><div><input value={coupon} onChange={(event) => setCoupon(event.target.value)} placeholder="Coupon code" /><button type="button" onClick={() => void applyCoupon()}>APPLY COUPON</button>{couponMessage ? <small role="status">{couponMessage}</small> : null}</div><button type="button" className="cart-update" onClick={() => void updateCart()}>UPDATE CART</button></div>
       </div>
       <aside className="cart-totals"><h2>Cart totals</h2><p><span>Subtotal</span><b>₹{subtotal.toFixed(2)}</b></p>{discount > 0 ? <p><span>Coupon ({couponCode})</span><b>−₹{Math.min(discount, subtotal).toFixed(2)}</b></p> : null}<p><span>GST</span><b>₹{gst.toFixed(2)}</b></p><p className="cart-total"><span>Total</span><b>₹{Math.max(0, total - discount).toFixed(2)}</b></p><button type="button" onClick={() => navigate('/checkout')}>PROCEED TO CHECKOUT</button></aside>
     </>}

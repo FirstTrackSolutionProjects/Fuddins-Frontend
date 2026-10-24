@@ -265,7 +265,7 @@ const App = () => {
             couponCode={couponCode} discount={couponDiscount}
             onCouponApplied={(code, discount) => { setCouponCode(code); setCouponDiscount(discount); }}
           />} />
-          <Route path="/checkout" element={<CheckoutPage cartItems={cartItems} couponCode={couponCode} discount={couponDiscount} onOrderPlaced={() => { setCartItems([]); setCouponCode(''); setCouponDiscount(0); }} />} />
+          <Route path="/checkout" element={<CheckoutPage cartItems={cartItems} couponCode={couponCode} discount={couponDiscount} onAuthenticated={handleAuthenticated} onOrderPlaced={() => { setCartItems([]); setCouponCode(''); setCouponDiscount(0); }} />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/pages/about" element={<AboutPage />} />
           <Route path="/pages/refer-earn" element={<ReferEarnPage />} />
