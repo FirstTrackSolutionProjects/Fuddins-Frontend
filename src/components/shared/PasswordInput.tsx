@@ -14,7 +14,7 @@ export default function PasswordInput({ className = '', ...props }: PasswordInpu
       <button
         type="button"
         onClick={() => setVisible((current) => !current)}
-        className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-neutral-500 hover:text-lime-700 focus:outline-none focus:ring-2 focus:ring-lime-500"
+        className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:text-lime-700 focus:outline-none focus-visible:text-lime-700"
         aria-label={action}
         aria-pressed={visible}
         title={action}
