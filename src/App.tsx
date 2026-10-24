@@ -45,6 +45,7 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import ReferEarnPage from './pages/ReferEarnPage';
 import ShopPage from './pages/ShopPage';
 import ShoppingCartDrawer from './components/customer/ShoppingCartDrawer';
 import VendorRegistrationForm from './components/vendor/VendorRegistrationForm';
@@ -267,6 +268,7 @@ const App = () => {
           <Route path="/checkout" element={<CheckoutPage cartItems={cartItems} couponCode={couponCode} discount={couponDiscount} onOrderPlaced={() => { setCartItems([]); setCouponCode(''); setCouponDiscount(0); }} />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/pages/about" element={<AboutPage />} />
+          <Route path="/pages/refer-earn" element={<ReferEarnPage />} />
           <Route path="/pages/:slug" element={<ContentRoute pages={visiblePages} />} />
           <Route path="/account" element={<section className="account-section min-h-[calc(100vh-160px)] bg-[#f8f7f5] px-5 py-14 pb-28">{currentUser?.role === 'user' ? <CustomerProfile user={currentUser} onUserUpdated={setCurrentUser} onLogout={handleLogout} /> : <div className="mx-auto max-w-[900px]"><h2 className="mb-10 font-serif text-[42px] leading-tight">My account</h2><AuthPanel currentUser={currentUser} onAuthenticated={handleAuthenticated} onLogout={handleLogout} /><AccountCommercePanel user={currentUser} /></div>}</section>} />
           {(['orders', 'wishlist', 'wallet', 'downloads', 'addresses', 'refer'] as const).map((view) => <Route key={view} path={`/account/${view}`} element={currentUser?.role === 'user' ? <section className="min-h-[calc(100vh-160px)] bg-[#f8f7f5] px-5 py-14 pb-28"><CustomerPortal view={view} /></section> : <Navigate to="/account" replace />} />)}

@@ -6,7 +6,7 @@ export interface AuthResponse {
   user: User;
 }
 
-export async function registerUser(payload: { name: string; email: string; password: string }): Promise<AuthResponse> {
+export async function registerUser(payload: { name: string; email: string; password: string; referralCode?: string }): Promise<AuthResponse> {
   const response = await fetch(`${API_ORIGIN}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
