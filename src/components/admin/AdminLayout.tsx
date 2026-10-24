@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Image,
+  MessageSquare,
 } from 'lucide-react';
 
 const adminNavigation = [
@@ -23,6 +24,7 @@ const adminNavigation = [
   ['/admin/orders', 'Orders', ShoppingBag],
   ['/admin/coupons', 'Coupons', Ticket],
   ['/admin/banners', 'Banners', Image],
+  ['/admin/reviews', 'Product reviews', MessageSquare],
   ['/admin/vendor-approvals', 'Vendor approvals', Store],
   ['/admin/commerce', 'Commerce', Boxes],
   ['/admin/delivery-team', 'Delivery team', Truck],

@@ -6,6 +6,7 @@ import AdminPanel from './components/admin/AdminPanel';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminProfile from './components/admin/AdminProfile';
 import BannerManager from './components/admin/BannerManager';
+import ProductReviewManager from './components/admin/ProductReviewManager';
 import { API_ORIGIN } from './config';
 import PartnerProfile from './components/shared/PartnerProfilePage';
 import AdvancedCommerceManager from './components/admin/AdvancedCommerceManager';
@@ -303,6 +304,7 @@ const App = () => {
             <Route path="orders" element={<div className="admin-grid"><OrdersPanel /></div>} />
             <Route path="coupons" element={<div className="admin-grid"><CouponManager /></div>} />
             <Route path="banners" element={<BannerManager />} />
+            <Route path="reviews" element={<ProductReviewManager />} />
             <Route path="vendor-approvals" element={<VendorApprovalManager />} />
             <Route path="commerce" element={<div className="admin-grid"><AdvancedCommerceManager /></div>} />
             <Route path="delivery-team" element={<div className="admin-grid"><DeliveryTeamManager /></div>} />
