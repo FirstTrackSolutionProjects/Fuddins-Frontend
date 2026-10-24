@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import type { Category, User } from '../../types';
 
@@ -20,22 +20,27 @@ interface HeaderProps {
   onLogout?: () => void;
 }
 
-// Lime-accent link (Home, Refer & Earn, Log In)
+const navBase = 'rounded-full px-3.5 py-2 text-[15px] font-semibold transition-colors';
+
+// Lime-accent link (Home, Refer & Earn)
 const accentLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `font-medium text-[16px] text-lime-600 hover:text-lime-700 transition-colors ${
-    isActive ? 'text-lime-700' : ''
-  }`;
+  `${navBase} ${isActive ? 'bg-lime-100 text-lime-800' : 'text-lime-600 hover:bg-lime-50 hover:text-lime-700'}`;
 
 // Dark link (All Products, Partner, About us)
 const darkLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `font-medium text-[16px] text-neutral-900 hover:text-lime-700 transition-colors ${
-    isActive ? 'text-lime-700' : ''
-  }`;
+  `${navBase} ${isActive ? 'bg-lime-100 text-lime-800' : 'text-neutral-800 hover:bg-lime-50 hover:text-lime-700'}`;
 
 const dropdownLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `block w-full px-6 py-3 text-left text-sm font-normal text-neutral-700 hover:bg-lime-50 hover:text-lime-700 ${
-    isActive ? 'text-lime-700' : ''
+  `flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-medium transition-colors ${
+    isActive ? 'bg-lime-100 text-lime-800' : 'text-neutral-700 hover:bg-lime-50 hover:text-lime-800'
   }`;
+
+// Log In / Account pill
+const loginPillClass = () =>
+  'ml-2 rounded-full bg-gradient-to-r from-lime-500 to-lime-600 px-5 py-2.5 text-[15px] font-bold text-white shadow-md shadow-lime-500/30 transition hover:from-lime-600 hover:to-lime-700 active:scale-95';
+
+const dropdownPanelClass =
+  'fuddins-pop absolute left-0 top-full z-50 mt-3 max-h-[70vh] min-w-[240px] overflow-y-auto rounded-2xl bg-white p-2 shadow-2xl shadow-neutral-900/15 ring-1 ring-neutral-100';
 
 const ChevronIcon = () => (
   <svg
@@ -186,6 +191,20 @@ const BasketIcon = () => (
   </svg>
 );
 
+const DesktopToggle = ({ label, open, onClick }: { label: string; open: boolean; onClick: () => void }) => (
+  <button
+    type="button"
+    aria-label={label}
+    aria-expanded={open}
+    onClick={onClick}
+    className={`grid h-7 w-7 place-items-center rounded-full transition ${open ? 'bg-lime-100 text-lime-700' : 'text-neutral-600 hover:bg-lime-50 hover:text-lime-700'}`}
+  >
+    <span className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
+      <ChevronIcon />
+    </span>
+  </button>
+);
+
 const quickCategorySets = [
   [['Baby care', 'Groceries-17-150x150.webp'], ['Sports Stuff', 'Groceries-20-150x150.webp'], ['Vegetables', 'Groceries-2-150x150 (1).webp'], ['Dairy', 'Groceries-4-150x150.webp']],
   [['Footwear', 'Groceries-15-150x150.webp'], ['Flowers', 'Groceries-18-150x150 (1).webp'], ['Mobile Accessories', 'Groceries-19-150x150.webp'], ['Ready Eatables', 'Groceries-3-150x150.webp']],
@@ -236,44 +255,63 @@ const Header = ({
     const category = categories.find((item) => { const itemName = simplify(item.name); return itemName === label || itemName.includes(label) || label.includes(itemName); });
     if (category) onOpenCategory(String(category.id));
   };
+  const navRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!openMenu) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) onToggleMenu(null);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onToggleMenu(null);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [openMenu, onToggleMenu]);
   const closeMobile = () => setMobileMenuOpen(false);
   const toggleSub = (key: MobileMenuKey) => setMobileSubMenu(mobileSubMenu === key ? null : key);
 
   return (
-    <header className="border-b border-neutral-200 bg-white font-sans">
+    <header className="border-b border-neutral-100 bg-white font-sans shadow-[0_2px_24px_rgba(15,23,42,0.06)]">
+      <style>{`
+        @keyframes fuddins-pop { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
+        .fuddins-pop { animation: fuddins-pop .18s ease-out both; }
+        @media (prefers-reduced-motion: reduce) { .fuddins-pop { animation: none; } }
+      `}</style>
       <div className="mobile-site-header mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-5" style={{ width: '100%', maxWidth: '1500px', minWidth: 0 }}>
         <div className="mobile-logo-frame" style={{ width: 112, height: 56, minWidth: 0, overflow: 'hidden' }}>
           <img src="/images/cropped-fuddns.webp" alt="Fuddins" className="mobile-site-logo" style={{ display: 'block', width: '100%', height: '100%', maxWidth: '100%', objectFit: 'contain' }} />
         </div>
 
-        <nav className="hidden flex-1 items-center justify-between pl-10 lg:flex">
+        <nav ref={navRef} className="hidden flex-1 items-center justify-between pl-10 lg:flex">
           {/* left group */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-1">
             <NavLink to="/" className={accentLinkClass}>
               Home
             </NavLink>
 
-            <div className="relative flex items-center gap-1">
+            <div className="relative flex items-center">
               <NavLink to="/shop" className={darkLinkClass}>
                 All Products
               </NavLink>
-              <button
-                type="button"
-                aria-label="Open product categories"
-                className="p-0 text-neutral-700"
+              <DesktopToggle
+                label="Open product categories"
+                open={openMenu === 'products'}
                 onClick={() => onToggleMenu(openMenu === 'products' ? null : 'products')}
-              >
-                <ChevronIcon />
-              </button>
+              />
               {openMenu === 'products' ? (
-                <div className="absolute left-0 top-8 z-50 min-w-[220px] bg-white py-2.5 shadow-xl">
+                <div className={dropdownPanelClass}>
                   {categories.map((category) => (
                     <button
                       key={category.id}
                       type="button"
-                      className="block w-full px-6 py-3 text-left text-sm font-normal text-neutral-700 hover:bg-lime-50 hover:text-lime-700"
+                      className={dropdownLinkClass({ isActive: false })}
                       onClick={() => onOpenCategory(String(category.id))}
                     >
+                      <SubDot />
                       {category.name}
                     </button>
                   ))}
@@ -283,80 +321,61 @@ const Header = ({
           </div>
 
           {/* right group */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-1">
             <NavLink to="/pages/refer-earn" className={accentLinkClass}>
               Refer &amp; Earn
             </NavLink>
 
-            <div className="relative flex items-center gap-1">
+            <div className="relative flex items-center">
               <NavLink to="/partner" className={darkLinkClass}>
                 Partner
               </NavLink>
-              <button
-                type="button"
-                aria-label="Open partner menu"
-                className="p-0 text-neutral-700"
+              <DesktopToggle
+                label="Open partner menu"
+                open={openMenu === 'partner'}
                 onClick={() => onToggleMenu(openMenu === 'partner' ? null : 'partner')}
-              >
-                <ChevronIcon />
-              </button>
+              />
               {openMenu === 'partner' ? (
-                <div className="absolute left-[-16px] top-8 z-50 min-w-[220px] bg-white py-2.5 shadow-xl">
+                <div className={`${dropdownPanelClass} !left-auto right-0`}>
                   <NavLink to="/partner/apply-shopping-card" className={dropdownLinkClass}>
-                    Apply shopping card
+                    <SubDot />Apply shopping card
                   </NavLink>
                   <NavLink to="/partner/vendor-register" className={dropdownLinkClass}>
-                    Executive Login
+                    <SubDot />Executive Login
                   </NavLink>
                   <NavLink to="/partner/menu-upload" className={dropdownLinkClass}>
-                    Menu Upload
+                    <SubDot />Menu Upload
                   </NavLink>
                   <NavLink to="/partner/onboarding-enquiry" className={dropdownLinkClass}>
-                    Onboarding Enquiry
+                    <SubDot />Onboarding Enquiry
                   </NavLink>
                 </div>
               ) : null}
             </div>
 
-            <div className="relative flex items-center gap-1">
+            <div className="relative flex items-center">
               <NavLink to="/pages/about" className={darkLinkClass}>
                 About us
               </NavLink>
-              <button
-                type="button"
-                aria-label="Open About us menu"
-                className="p-0 text-neutral-700"
+              <DesktopToggle
+                label="Open About us menu"
+                open={openMenu === 'about'}
                 onClick={() => onToggleMenu(openMenu === 'about' ? null : 'about')}
-              >
-                <ChevronIcon />
-              </button>
+              />
               {openMenu === 'about' ? (
-                <div className="absolute left-[-16px] top-8 z-50 min-w-[220px] bg-white py-2.5 shadow-xl">
+                <div className={`${dropdownPanelClass} !left-auto right-0`}>
                   <NavLink to="/pages/about" className={dropdownLinkClass}>
-                    About
+                    <SubDot />About
                   </NavLink>
                   <NavLink to="/contact" className={dropdownLinkClass}>
-                    Contact
+                    <SubDot />Contact
                   </NavLink>
                   <NavLink to="/career" className={dropdownLinkClass}>
-                    Career
+                    <SubDot />Career
                   </NavLink>
                 </div>
               ) : null}
             </div>
-
-            <button
-              type="button"
-              aria-label="Cart"
-              className="flex items-center justify-center border-2 border-lime-600 p-1.5 text-lime-600"
-              onClick={onOpenCart}
-            >
-              <BasketIcon />
-            </button>
-
-            <NavLink to="/account" className={accentLinkClass}>
-              {currentUser ? 'Account' : 'Log In'}
-            </NavLink>
 
             {isPartner && !isAdmin ? (
               <NavLink to={currentUser?.role === 'delivery' ? '/partner/delivery/dashboard' : '/partner/vendor/dashboard'} className={darkLinkClass}>
@@ -369,6 +388,19 @@ const Header = ({
                 Admin
               </NavLink>
             ) : null}
+
+            <button
+              type="button"
+              aria-label="Cart"
+              className="ml-2 grid h-10 w-10 place-items-center rounded-xl border-2 border-lime-500 text-lime-600 transition hover:bg-lime-500 hover:text-white active:scale-95"
+              onClick={onOpenCart}
+            >
+              <BasketIcon />
+            </button>
+
+            <NavLink to="/account" className={loginPillClass}>
+              {currentUser ? 'Account' : 'Log In'}
+            </NavLink>
           </div>
         </nav>
 
@@ -615,7 +647,7 @@ const Header = ({
               if (event.key === 'Enter') onSearchSubmit();
             }}
             placeholder="Search for products..."
-            className="w-full rounded-full border-0 bg-neutral-100 py-4 pl-14 pr-5 text-base font-normal outline-none"
+            className="w-full rounded-full border-0 bg-neutral-100 py-4 pl-14 pr-5 text-base font-normal outline-none ring-1 ring-neutral-200 transition focus:bg-white focus:ring-4 focus:ring-lime-500/25"
           />
         </div>
       </div>
