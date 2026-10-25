@@ -179,6 +179,7 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
   const [form, setForm] = useState(emptyProductForm);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const load = async () => {
     setMessage('');
@@ -211,6 +212,14 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
   }, [role]);
 
   const activeOrders = useMemo(() => orders.filter((order) => role === 'vendor' ? !['completed', 'cancelled'].includes(order.status) : !['delivered', 'failed'].includes(order.deliveryStatus)), [orders, role]);
+
+  const toggleAddForm = () => {
+    const willOpen = !showAddForm;
+    setShowAddForm(willOpen);
+    if (willOpen) {
+      setTimeout(() => document.getElementById('add-product-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    }
+  };
 
   const createProduct = async (event: FormEvent) => {
     event.preventDefault();
@@ -252,6 +261,7 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
         }),
       });
       setForm(emptyProductForm);
+      setShowAddForm(false);
       setMessage('Product created successfully.');
       await load();
     } catch (error) {
@@ -312,6 +322,14 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
                 <NavLink to="/partner/vendor/orders" className={outlineButtonClasses}><Ico d={ICON.cart} className="h-4 w-4" />Orders</NavLink>
                 <NavLink to="/partner/vendor/inventory" className={outlineButtonClasses}><Ico d={ICON.package} className="h-4 w-4" />Inventory</NavLink>
                 <NavLink to="/partner/vendor/payouts" className={outlineButtonClasses}><Ico d={ICON.rupee} className="h-4 w-4" />Payouts</NavLink>
+                <button
+                  type="button"
+                  onClick={toggleAddForm}
+                  className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-bold text-neutral-900 shadow-md shadow-lime-900/20 ring-1 ring-white/40 transition hover:bg-amber-300 active:scale-[0.98]"
+                >
+                  <Ico d={ICON.plus} className="h-4 w-4" stroke={2.5} />
+                  {showAddForm ? 'Close form' : 'Add product'}
+                </button>
               </>
             ) : (
               <>
@@ -369,64 +387,82 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
 
       {role === 'vendor' ? (
         <>
-          {/* add product */}
-          <Card icon="plus" title="Add a product" hint="Fields marked * are required">
-            <form className="grid gap-4" onSubmit={createProduct}>
-              <FormGroup title="Basic info" icon="tag">
-                <Field label="Product name" required><input required placeholder="Product name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={inputClasses} /></Field>
-                <Field label="SKU"><input placeholder="SKU" value={form.sku} onChange={(event) => setForm({ ...form, sku: event.target.value })} className={inputClasses} /></Field>
-                <Field label="Brand"><input placeholder="Brand" value={form.brand} onChange={(event) => setForm({ ...form, brand: event.target.value })} className={inputClasses} /></Field>
-                <Field label="Category ID"><input type="number" placeholder="Category ID" value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value })} className={inputClasses} /></Field>
-              </FormGroup>
+          {/* add product (collapsible) */}
+          {showAddForm ? (
+            <div id="add-product-card">
+              <Card icon="plus" title="Add a product" hint="Fields marked * are required">
+                <form className="grid gap-4" onSubmit={createProduct}>
+                  <FormGroup title="Basic info" icon="tag">
+                    <Field label="Product name" required><input required placeholder="Product name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={inputClasses} /></Field>
+                    <Field label="SKU"><input placeholder="SKU" value={form.sku} onChange={(event) => setForm({ ...form, sku: event.target.value })} className={inputClasses} /></Field>
+                    <Field label="Brand"><input placeholder="Brand" value={form.brand} onChange={(event) => setForm({ ...form, brand: event.target.value })} className={inputClasses} /></Field>
+                    <Field label="Category ID"><input type="number" placeholder="Category ID" value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value })} className={inputClasses} /></Field>
+                  </FormGroup>
 
-              <FormGroup title="Pricing & stock" icon="rupee">
-                <Field label="Price" required><input required type="number" min="0" step="0.01" placeholder="Price" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className={inputClasses} /></Field>
-                <Field label="Regular price"><input type="number" min="0" step="0.01" placeholder="Regular price" value={form.regularPrice} onChange={(event) => setForm({ ...form, regularPrice: event.target.value })} className={inputClasses} /></Field>
-                <Field label="Sale price"><input type="number" min="0" step="0.01" placeholder="Sale price" value={form.salePrice} onChange={(event) => setForm({ ...form, salePrice: event.target.value })} className={inputClasses} /></Field>
-                <Field label="Stock quantity"><input type="number" min="0" placeholder="Stock quantity" value={form.stockQuantity} onChange={(event) => setForm({ ...form, stockQuantity: event.target.value })} className={inputClasses} /></Field>
-                <Field label="Low-stock threshold" full><input type="number" min="0" placeholder="Low-stock threshold" value={form.lowStockThreshold} onChange={(event) => setForm({ ...form, lowStockThreshold: event.target.value })} className={inputClasses} /></Field>
-              </FormGroup>
+                  <FormGroup title="Pricing & stock" icon="rupee">
+                    <Field label="Price" required><input required type="number" min="0" step="0.01" placeholder="Price" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className={inputClasses} /></Field>
+                    <Field label="Regular price"><input type="number" min="0" step="0.01" placeholder="Regular price" value={form.regularPrice} onChange={(event) => setForm({ ...form, regularPrice: event.target.value })} className={inputClasses} /></Field>
+                    <Field label="Sale price"><input type="number" min="0" step="0.01" placeholder="Sale price" value={form.salePrice} onChange={(event) => setForm({ ...form, salePrice: event.target.value })} className={inputClasses} /></Field>
+                    <Field label="Stock quantity"><input type="number" min="0" placeholder="Stock quantity" value={form.stockQuantity} onChange={(event) => setForm({ ...form, stockQuantity: event.target.value })} className={inputClasses} /></Field>
+                    <Field label="Low-stock threshold" full><input type="number" min="0" placeholder="Low-stock threshold" value={form.lowStockThreshold} onChange={(event) => setForm({ ...form, lowStockThreshold: event.target.value })} className={inputClasses} /></Field>
+                  </FormGroup>
 
-              <FormGroup title="Images" icon="image">
-                <Field label="Main image URL" full><input placeholder="Main image URL" value={form.mainImageUrl} onChange={(event) => setForm({ ...form, mainImageUrl: event.target.value })} className={inputClasses} /></Field>
-                <Field label="Gallery image URLs (comma separated)" full><input placeholder="Gallery image URLs (comma separated)" value={form.galleryImageUrls} onChange={(event) => setForm({ ...form, galleryImageUrls: event.target.value })} className={inputClasses} /></Field>
-              </FormGroup>
+                  <FormGroup title="Images" icon="image">
+                    <Field label="Main image URL" full><input placeholder="Main image URL" value={form.mainImageUrl} onChange={(event) => setForm({ ...form, mainImageUrl: event.target.value })} className={inputClasses} /></Field>
+                    <Field label="Gallery image URLs (comma separated)" full><input placeholder="Gallery image URLs (comma separated)" value={form.galleryImageUrls} onChange={(event) => setForm({ ...form, galleryImageUrls: event.target.value })} className={inputClasses} /></Field>
+                  </FormGroup>
 
-              <FormGroup title="Description" icon="edit">
-                <Field label="Short description" full><input placeholder="Short description" value={form.shortDescription} onChange={(event) => setForm({ ...form, shortDescription: event.target.value })} className={inputClasses} /></Field>
-                <div className="min-w-0 sm:col-span-2">
-                  <span className="mb-1.5 block text-sm font-semibold text-neutral-700">Full description</span>
-                  <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white transition focus-within:border-lime-500 focus-within:ring-4 focus-within:ring-lime-500/15 [&_.ck-editor__editable]:!min-h-[180px] [&_.ck-editor__editable]:!border-0 [&_.ck-editor__editable.ck-focused]:!shadow-none [&_.ck-toolbar]:!border-0 [&_.ck-toolbar]:!border-b [&_.ck-toolbar]:!bg-neutral-50">
-                    <CKEditor editor={ClassicEditor} data={form.description} onChange={(_, editor) => setForm({ ...form, description: editor.getData() })} />
+                  <FormGroup title="Description" icon="edit">
+                    <Field label="Short description" full><input placeholder="Short description" value={form.shortDescription} onChange={(event) => setForm({ ...form, shortDescription: event.target.value })} className={inputClasses} /></Field>
+                    <div className="min-w-0 sm:col-span-2">
+                      <span className="mb-1.5 block text-sm font-semibold text-neutral-700">Full description</span>
+                      <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white transition focus-within:border-lime-500 focus-within:ring-4 focus-within:ring-lime-500/15 [&_.ck-editor__editable]:!min-h-[180px] [&_.ck-editor__editable]:!border-0 [&_.ck-editor__editable.ck-focused]:!shadow-none [&_.ck-toolbar]:!border-0 [&_.ck-toolbar]:!border-b [&_.ck-toolbar]:!bg-neutral-50">
+                        <CKEditor editor={ClassicEditor} data={form.description} onChange={(_, editor) => setForm({ ...form, description: editor.getData() })} />
+                      </div>
+                    </div>
+                  </FormGroup>
+
+                  <details className="group rounded-2xl border border-neutral-100 bg-neutral-50/50 p-4 sm:p-5">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-bold text-neutral-800 [&::-webkit-details-marker]:hidden">
+                      <span className="flex items-center gap-2">
+                        <span className="grid h-6 w-6 place-items-center rounded-lg bg-lime-100 text-lime-700"><Ico d={ICON.code} className="h-3.5 w-3.5" /></span>
+                        Advanced: attributes &amp; variations (JSON)
+                      </span>
+                      <span className="transition-transform duration-200 group-open:rotate-180"><Ico d={ICON.chevron} className="h-4 w-4" /></span>
+                    </summary>
+                    <div className="mt-4 grid gap-4">
+                      <Field label="Attributes (JSON)"><textarea placeholder='Attributes (JSON, e.g. {"color":"red","size":"M"})' value={form.attributes} onChange={(event) => setForm({ ...form, attributes: event.target.value })} className={`${textareaClasses} min-h-[90px]`} /></Field>
+                      <Field label="Variations (JSON array)"><textarea placeholder='Variations (JSON array, e.g. [{"sku":"P-RED-M","price":499}])' value={form.variations} onChange={(event) => setForm({ ...form, variations: event.target.value })} className={`${textareaClasses} min-h-[90px]`} /></Field>
+                    </div>
+                  </details>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <button type="button" onClick={() => setShowAddForm(false)} className={outlineButtonClasses}>
+                      Cancel
+                    </button>
+                    <button type="submit" disabled={busy} className={`${primaryButtonClasses} py-3.5`}>
+                      <Ico d={ICON.plus} className="h-4 w-4" stroke={2.5} />
+                      Add product
+                    </button>
                   </div>
-                </div>
-              </FormGroup>
-
-              <details className="group rounded-2xl border border-neutral-100 bg-neutral-50/50 p-4 sm:p-5">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-bold text-neutral-800 [&::-webkit-details-marker]:hidden">
-                  <span className="flex items-center gap-2">
-                    <span className="grid h-6 w-6 place-items-center rounded-lg bg-lime-100 text-lime-700"><Ico d={ICON.code} className="h-3.5 w-3.5" /></span>
-                    Advanced: attributes &amp; variations (JSON)
-                  </span>
-                  <span className="transition-transform duration-200 group-open:rotate-180"><Ico d={ICON.chevron} className="h-4 w-4" /></span>
-                </summary>
-                <div className="mt-4 grid gap-4">
-                  <Field label="Attributes (JSON)"><textarea placeholder='Attributes (JSON, e.g. {"color":"red","size":"M"})' value={form.attributes} onChange={(event) => setForm({ ...form, attributes: event.target.value })} className={`${textareaClasses} min-h-[90px]`} /></Field>
-                  <Field label="Variations (JSON array)"><textarea placeholder='Variations (JSON array, e.g. [{"sku":"P-RED-M","price":499}])' value={form.variations} onChange={(event) => setForm({ ...form, variations: event.target.value })} className={`${textareaClasses} min-h-[90px]`} /></Field>
-                </div>
-              </details>
-
-              <button type="submit" disabled={busy} className={`${primaryButtonClasses} w-full py-3.5`}>
-                <Ico d={ICON.plus} className="h-4 w-4" stroke={2.5} />
-                Add product
-              </button>
-            </form>
-          </Card>
+                </form>
+              </Card>
+            </div>
+          ) : null}
 
           {/* products */}
           <Card icon="package" title="Products" hint={products.length ? `Showing ${Math.min(products.length, 10)} of ${products.length}` : undefined}>
             {products.length === 0 ? (
-              <EmptyState icon="package" text="No products yet." />
+              <>
+                <EmptyState icon="package" text="No products yet." />
+                {!showAddForm ? (
+                  <div className="mt-4 flex justify-center">
+                    <button type="button" onClick={toggleAddForm} className={primaryButtonClasses}>
+                      <Ico d={ICON.plus} className="h-4 w-4" stroke={2.5} /> Add your first product
+                    </button>
+                  </div>
+                ) : null}
+              </>
             ) : (
               <div className="grid gap-2.5">
                 {products.slice(0, 10).map((product) => (
