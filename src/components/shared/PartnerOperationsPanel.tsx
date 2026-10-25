@@ -37,6 +37,13 @@ const getInitials = (name: string) =>
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'U';
 
+const greeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+};
+
 /* ---------- UI-only styling helpers ---------- */
 
 const inputClasses =
@@ -44,9 +51,11 @@ const inputClasses =
 const textareaClasses =
   'w-full min-w-0 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 font-mono text-sm text-neutral-900 placeholder:text-neutral-400 transition focus:border-lime-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-lime-500/15';
 const primaryButtonClasses =
-  'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-lime-500 to-lime-600 px-5 text-sm font-bold text-white shadow-md shadow-lime-500/25 transition hover:from-lime-600 hover:to-lime-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:px-6';
+  'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-lime-500 to-lime-600 px-5 text-sm font-bold text-white shadow-md shadow-lime-600/25 transition hover:from-lime-600 hover:to-lime-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:px-6';
 const outlineButtonClasses =
   'inline-flex min-h-[44px] min-w-0 items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 no-underline transition hover:border-lime-300 hover:bg-lime-50 hover:text-lime-800';
+const heroGhostClasses =
+  'inline-flex min-h-[44px] min-w-0 items-center justify-center gap-2 rounded-xl bg-white/15 px-4 text-sm font-semibold text-white no-underline ring-1 ring-white/25 backdrop-blur transition hover:bg-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-white';
 
 const Ico = ({ d, className = 'h-5 w-5', stroke = 2 }: { d: string; className?: string; stroke?: number }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
@@ -73,12 +82,13 @@ const ICON = {
   code: 'm16 18 6-6-6-6 M8 6l-6 6 6 6',
   chevron: 'm6 9 6 6 6-6',
   inbox: 'M22 12h-6l-2 3h-4l-2-3H2 M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z',
+  close: 'M18 6 6 18 M6 6l12 12',
 };
 
 const statusBadgeTone = (status: string) => {
   const value = (status || '').toLowerCase();
-  if (['delivered', 'completed', 'instock', 'in stock'].includes(value)) return 'bg-lime-100 text-lime-800 ring-lime-200';
-  if (['pending', 'processing', 'assigned', 'picked_up', 'out_for_delivery'].includes(value)) return 'bg-amber-100 text-amber-800 ring-amber-200';
+  if (['delivered', 'completed', 'instock', 'in stock', 'active'].includes(value)) return 'bg-lime-100 text-lime-800 ring-lime-200';
+  if (['pending', 'processing', 'assigned', 'picked_up', 'out_for_delivery', 'lowstock'].includes(value)) return 'bg-amber-100 text-amber-800 ring-amber-200';
   if (['cancelled', 'failed', 'outofstock', 'out of stock'].includes(value)) return 'bg-red-100 text-red-700 ring-red-200';
   return 'bg-neutral-100 text-neutral-700 ring-neutral-200';
 };
@@ -87,38 +97,45 @@ const StatusBadge = ({ status }: { status: string }) => (
   <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold capitalize ring-1 ${statusBadgeTone(status)}`}>{status.replaceAll('_', ' ')}</span>
 );
 
-const StatCard = ({ icon, label, value, tone }: { icon: keyof typeof ICON; label: string; value: ReactNode; tone?: string }) => (
-  <div className="group relative min-w-0 overflow-hidden rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-100 transition duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-lime-700/10 hover:ring-lime-200 sm:p-5">
-    <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-lime-100/70 transition duration-300 group-hover:scale-125" />
-    <div className="relative flex items-start justify-between gap-2">
-      <div className="min-w-0">
-        <span className="block text-sm font-semibold text-neutral-500">{label}</span>
-        <strong className={`mt-1.5 block break-words text-2xl font-extrabold leading-tight sm:text-3xl ${tone || 'text-neutral-900'}`}>{value}</strong>
-      </div>
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-lime-400 to-lime-600 text-white shadow-md shadow-lime-500/30">
+const STAT_TONES: Record<string, string> = {
+  lime: 'bg-lime-100 text-lime-700',
+  emerald: 'bg-emerald-100 text-emerald-700',
+  teal: 'bg-teal-100 text-teal-700',
+  amber: 'bg-amber-100 text-amber-700',
+};
+
+const StatCard = ({ icon, label, value, color = 'lime', valueClass }: { icon: keyof typeof ICON; label: string; value: ReactNode; color?: string; valueClass?: string }) => (
+  <div className="min-w-0 rounded-2xl bg-white p-4 shadow-lg shadow-lime-900/10 ring-1 ring-neutral-100 sm:p-5">
+    <div className="flex items-center gap-3">
+      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${STAT_TONES[color]}`}>
         <Ico d={ICON[icon]} className="h-5 w-5" />
       </span>
+      <span className="min-w-0 text-sm font-semibold text-neutral-500">{label}</span>
     </div>
+    <strong className={`mt-3 block break-words text-2xl font-extrabold leading-tight text-neutral-900 sm:text-3xl ${valueClass || ''}`}>{value}</strong>
   </div>
 );
 
-const Card = ({ icon, title, hint, children }: { icon: keyof typeof ICON; title: string; hint?: string; children: ReactNode }) => (
+const Card = ({ icon, title, hint, action, children }: { icon: keyof typeof ICON; title: string; hint?: string; action?: ReactNode; children: ReactNode }) => (
   <section className="mt-6 min-w-0 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-neutral-100 sm:p-6">
-    <header className="mb-5 flex items-center gap-3">
-      <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-lime-400 to-lime-600 text-white shadow-md shadow-lime-500/30">
-        <Ico d={ICON[icon]} className="h-5 w-5" />
-      </span>
-      <div>
-        <h4 className="m-0 font-serif text-xl font-bold text-neutral-900">{title}</h4>
-        {hint ? <p className="m-0 mt-0.5 text-xs text-neutral-500">{hint}</p> : null}
+    <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-lime-100 text-lime-700">
+          <Ico d={ICON[icon]} className="h-5 w-5" />
+        </span>
+        <div>
+          <h4 className="m-0 font-serif text-xl font-bold text-neutral-900">{title}</h4>
+          {hint ? <p className="m-0 mt-0.5 text-xs text-neutral-500">{hint}</p> : null}
+        </div>
       </div>
+      {action}
     </header>
     {children}
   </section>
 );
 
 const FormGroup = ({ title, icon, children }: { title: string; icon: keyof typeof ICON; children: ReactNode }) => (
-  <fieldset className="m-0 min-w-0 rounded-2xl border border-neutral-100 bg-neutral-50/50 p-4 sm:p-5">
+  <fieldset className="m-0 min-w-0 rounded-2xl border border-neutral-100 bg-neutral-50/60 p-4 sm:p-5">
     <legend className="flex items-center gap-2 px-2 text-sm font-bold text-neutral-800">
       <span className="grid h-6 w-6 place-items-center rounded-lg bg-lime-100 text-lime-700">
         <Ico d={ICON[icon]} className="h-3.5 w-3.5" />
@@ -141,12 +158,14 @@ const Field = ({ label, required = false, full = false, children }: { label: str
   </div>
 );
 
-const EmptyState = ({ icon, text }: { icon: keyof typeof ICON; text: string }) => (
-  <div className="grid place-items-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50/60 px-4 py-10 text-center">
-    <span className="grid h-14 w-14 place-items-center rounded-full bg-lime-50 text-lime-600 ring-8 ring-lime-50/60">
-      <Ico d={ICON[icon]} className="h-6 w-6" />
+const EmptyState = ({ icon, title, text, action }: { icon: keyof typeof ICON; title: string; text: string; action?: ReactNode }) => (
+  <div className="grid place-items-center rounded-2xl border border-dashed border-lime-200 bg-gradient-to-b from-lime-50/70 to-white px-4 py-12 text-center">
+    <span className="grid h-16 w-16 place-items-center rounded-2xl bg-white text-lime-600 shadow-md shadow-lime-600/15 ring-1 ring-lime-100">
+      <Ico d={ICON[icon]} className="h-7 w-7" />
     </span>
-    <p className="m-0 mt-3 text-sm font-medium text-neutral-500">{text}</p>
+    <p className="m-0 mt-4 text-base font-bold text-neutral-900">{title}</p>
+    <p className="m-0 mt-1 max-w-sm text-sm text-neutral-500">{text}</p>
+    {action ? <div className="mt-5">{action}</div> : null}
   </div>
 );
 
@@ -178,11 +197,11 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
   const [membership, setMembership] = useState<RecordValue>({});
   const [form, setForm] = useState(emptyProductForm);
   const [message, setMessage] = useState('');
+  const [formError, setFormError] = useState('');
   const [busy, setBusy] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
 
   const load = async () => {
-    setMessage('');
     try {
       if (role === 'vendor') {
         const [productData, orderData, settlementData, membershipData, report] = await Promise.all([
@@ -211,19 +230,37 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
     load();
   }, [role]);
 
+  // Drawer: close on Esc + lock page scroll while open
+  useEffect(() => {
+    if (!showAddForm) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowAddForm(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [showAddForm]);
+
   const activeOrders = useMemo(() => orders.filter((order) => role === 'vendor' ? !['completed', 'cancelled'].includes(order.status) : !['delivered', 'failed'].includes(order.deliveryStatus)), [orders, role]);
 
-  const toggleAddForm = () => {
-    const willOpen = !showAddForm;
-    setShowAddForm(willOpen);
-    if (willOpen) {
-      setTimeout(() => document.getElementById('add-product-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-    }
+  const openAddForm = () => {
+    setFormError('');
+    setShowAddForm(true);
+  };
+
+  const refresh = () => {
+    setMessage('');
+    load();
   };
 
   const createProduct = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
+    setFormError('');
     try {
       let attributes: RecordValue = {};
       let variations: RecordValue[] = [];
@@ -265,7 +302,7 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
       setMessage('Product created successfully.');
       await load();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Product could not be created');
+      setFormError(error instanceof Error ? error.message : 'Product could not be created');
     } finally {
       setBusy(false);
     }
@@ -297,106 +334,268 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
     }
   };
 
+  const firstName = (user.name || '').split(' ')[0] || 'there';
+  const membershipActive = (membership.membershipStatus || '').toLowerCase() === 'active';
+
+  const checklist = [
+    { label: 'Create your partner account', done: true },
+    { label: 'Activate your membership', done: membershipActive },
+    { label: 'Add your first product', done: products.length > 0 },
+    { label: 'Receive your first order', done: orders.length > 0 },
+  ];
+  const checklistDone = checklist.filter((item) => item.done).length;
+
   return (
     <section className="mx-auto min-w-0 max-w-[1300px]">
-      {/* header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-lime-500 via-lime-600 to-lime-800 p-5 shadow-xl shadow-lime-700/20 sm:p-7">
-        <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/10" />
-        <div className="pointer-events-none absolute -bottom-16 left-1/3 h-40 w-40 rounded-full bg-white/10" />
-        <div className="relative flex flex-wrap items-center justify-between gap-5">
+      {/* hero */}
+      <div
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-lime-500 via-lime-700 to-emerald-900 px-5 pb-16 pt-6 shadow-xl shadow-lime-900/20 sm:px-8 sm:pb-20 sm:pt-8"
+        style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.14) 1px, transparent 1px), linear-gradient(135deg, #84cc16 0%, #4d7c0f 55%, #064e3b 100%)', backgroundSize: '20px 20px, 100% 100%' }}
+      >
+        <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-24 left-1/4 h-56 w-56 rounded-full bg-emerald-300/20 blur-3xl" />
+
+        <div className="relative flex flex-wrap items-start justify-between gap-6">
           <div className="flex min-w-0 items-center gap-4">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white text-lg font-extrabold text-lime-700 shadow-lg">
+            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-white text-xl font-extrabold text-lime-700 shadow-lg ring-4 ring-white/30">
               {getInitials(user.name)}
             </div>
             <div className="min-w-0">
-              <p className="m-0 truncate text-xl font-bold text-white sm:text-2xl">{user.name}</p>
-              <p className="m-0 mt-0.5 truncate text-sm text-lime-50/90">{user.email}</p>
-              <span className="mt-2 inline-block rounded-full bg-white/20 px-3 py-0.5 text-xs font-bold capitalize text-white ring-1 ring-white/30">
-                {role === 'vendor' ? 'Vendor dashboard' : 'Delivery dashboard'}
-              </span>
+              <p className="m-0 text-sm font-medium text-lime-50/90">{greeting()},</p>
+              <h2 className="m-0 truncate font-serif text-2xl font-bold text-white sm:text-3xl">{firstName}</h2>
+              <p className="m-0 mt-0.5 truncate text-sm text-lime-50/80">{user.email}</p>
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                <span className="rounded-full bg-white/20 px-3 py-0.5 text-xs font-bold text-white ring-1 ring-white/30">
+                  {role === 'vendor' ? 'Vendor dashboard' : 'Delivery dashboard'}
+                </span>
+                {role === 'vendor' ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-950/40 px-3 py-0.5 text-xs font-bold capitalize text-lime-100 ring-1 ring-white/20">
+                    <Ico d={ICON.award} className="h-3 w-3" />
+                    {membership.membershipStatus || 'pending'} member
+                  </span>
+                ) : null}
+              </div>
             </div>
           </div>
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
             {role === 'vendor' ? (
               <>
-                <NavLink to="/partner/vendor/orders" className={outlineButtonClasses}><Ico d={ICON.cart} className="h-4 w-4" />Orders</NavLink>
-                <NavLink to="/partner/vendor/inventory" className={outlineButtonClasses}><Ico d={ICON.package} className="h-4 w-4" />Inventory</NavLink>
-                <NavLink to="/partner/vendor/payouts" className={outlineButtonClasses}><Ico d={ICON.rupee} className="h-4 w-4" />Payouts</NavLink>
                 <button
                   type="button"
-                  onClick={toggleAddForm}
-                  className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-bold text-neutral-900 shadow-md shadow-lime-900/20 ring-1 ring-white/40 transition hover:bg-amber-300 active:scale-[0.98]"
+                  onClick={openAddForm}
+                  className="col-span-2 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-extrabold text-lime-800 shadow-lg shadow-emerald-950/20 transition hover:bg-lime-50 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-lime-700 sm:col-span-1"
                 >
-                  <Ico d={ICON.plus} className="h-4 w-4" stroke={2.5} />
-                  {showAddForm ? 'Close form' : 'Add product'}
+                  <Ico d={ICON.plus} className="h-4 w-4" stroke={3} />
+                  Add product
                 </button>
+                <NavLink to="/partner/vendor/orders" className={heroGhostClasses}><Ico d={ICON.cart} className="h-4 w-4" />Orders</NavLink>
+                <NavLink to="/partner/vendor/inventory" className={heroGhostClasses}><Ico d={ICON.package} className="h-4 w-4" />Inventory</NavLink>
+                <NavLink to="/partner/vendor/payouts" className={heroGhostClasses}><Ico d={ICON.rupee} className="h-4 w-4" />Payouts</NavLink>
               </>
             ) : (
               <>
-                <NavLink to="/partner/delivery/history" className={outlineButtonClasses}><Ico d={ICON.clock} className="h-4 w-4" />History</NavLink>
-                <NavLink to="/partner/delivery/wallet" className={outlineButtonClasses}><Ico d={ICON.rupee} className="h-4 w-4" />Wallet &amp; withdrawals</NavLink>
+                <NavLink to="/partner/delivery/history" className={heroGhostClasses}><Ico d={ICON.clock} className="h-4 w-4" />History</NavLink>
+                <NavLink to="/partner/delivery/wallet" className={heroGhostClasses}><Ico d={ICON.rupee} className="h-4 w-4" />Wallet &amp; withdrawals</NavLink>
               </>
             )}
-            <NavLink to={`/partner/${role}/profile`} className={outlineButtonClasses}>
+            <NavLink to={`/partner/${role}/profile`} className={heroGhostClasses}>
               <Ico d={ICON.user} className="h-4 w-4" />My profile
             </NavLink>
-            <button
-              type="button"
-              onClick={load}
-              disabled={busy}
-              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white/20 px-5 text-sm font-bold text-white ring-1 ring-white/40 backdrop-blur transition hover:bg-white/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <button type="button" onClick={refresh} disabled={busy} aria-label="Refresh data" title="Refresh" className={`${heroGhostClasses} disabled:cursor-not-allowed disabled:opacity-60`}>
               <Ico d={ICON.refresh} className="h-4 w-4" />
-              Refresh
+              <span className="sm:sr-only">Refresh</span>
             </button>
           </div>
         </div>
       </div>
 
-      {message ? (
-        <p
-          role="status"
-          className={`m-0 mt-4 flex items-start gap-2.5 rounded-xl px-4 py-3 text-sm font-medium ${
-            isErrorMessage(message) ? 'bg-red-50 text-red-700 ring-1 ring-red-200' : 'bg-lime-50 text-lime-800 ring-1 ring-lime-200'
-          }`}
-        >
-          <Ico d={isErrorMessage(message) ? ICON.alert : ICON.check} className="mt-0.5 h-4 w-4 shrink-0" />
-          <span className="min-w-0 break-words">{message}</span>
-        </p>
-      ) : null}
-
-      {/* stats */}
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+      {/* stats overlapping hero */}
+      <div className="relative -mt-12 grid grid-cols-2 gap-3 px-3 sm:-mt-14 sm:gap-4 sm:px-6 lg:grid-cols-4 xl:grid-cols-5">
         {role === 'vendor' ? (
           <>
-            <StatCard icon="package" label="Catalog items" value={summary.catalogItems || products.length} />
-            <StatCard icon="cart" label="Orders" value={summary.vendorOrders || orders.length} />
-            <StatCard icon="rupee" label="Sales" value={`Rs. ${summary.vendorSales || 0}`} tone="text-lime-700" />
-            <StatCard icon="award" label="Membership" value={membership.membershipStatus || 'pending'} tone="text-amber-600 capitalize" />
+            <StatCard icon="package" label="Catalog items" value={summary.catalogItems || products.length} color="lime" />
+            <StatCard icon="cart" label="Orders" value={summary.vendorOrders || orders.length} color="teal" />
+            <StatCard icon="rupee" label="Sales" value={`Rs. ${summary.vendorSales || 0}`} color="emerald" valueClass="text-emerald-700" />
+            <StatCard icon="award" label="Membership" value={membership.membershipStatus || 'pending'} color="amber" valueClass="capitalize text-amber-600" />
           </>
         ) : (
           <>
-            <StatCard icon="truck" label="Total deliveries" value={summary.total || 0} />
-            <StatCard icon="truck" label="Active" value={summary.active || 0} tone="text-amber-600" />
-            <StatCard icon="package" label="Delivered" value={summary.delivered || 0} tone="text-lime-700" />
-            <StatCard icon="rupee" label="Delivery wallet" value={`Rs. ${summary.walletBalance || 0}`} tone="text-lime-700" />
-            <StatCard icon="rupee" label="COD to collect" value={`Rs. ${summary.codToCollect || 0}`} />
+            <StatCard icon="truck" label="Total deliveries" value={summary.total || 0} color="lime" />
+            <StatCard icon="clock" label="Active" value={summary.active || 0} color="amber" valueClass="text-amber-600" />
+            <StatCard icon="check" label="Delivered" value={summary.delivered || 0} color="emerald" valueClass="text-emerald-700" />
+            <StatCard icon="rupee" label="Delivery wallet" value={`Rs. ${summary.walletBalance || 0}`} color="teal" />
+            <StatCard icon="rupee" label="COD to collect" value={`Rs. ${summary.codToCollect || 0}`} color="lime" />
           </>
         )}
       </div>
 
+      {message ? (
+        <p
+          role="status"
+          className={`m-0 mt-6 flex items-start gap-2.5 rounded-xl px-4 py-3 text-sm font-medium ${
+            isErrorMessage(message) ? 'bg-red-50 text-red-700 ring-1 ring-red-200' : 'bg-lime-50 text-lime-800 ring-1 ring-lime-200'
+          }`}
+        >
+          <Ico d={isErrorMessage(message) ? ICON.alert : ICON.check} className="mt-0.5 h-4 w-4 shrink-0" />
+          <span className="min-w-0 flex-1 break-words">{message}</span>
+          <button type="button" onClick={() => setMessage('')} aria-label="Dismiss message" className="shrink-0 rounded-md p-0.5 opacity-60 transition hover:opacity-100">
+            <Ico d={ICON.close} className="h-4 w-4" />
+          </button>
+        </p>
+      ) : null}
+
       {role === 'vendor' ? (
         <>
-          {/* add product (collapsible) */}
+          {/* getting started */}
+          {checklistDone < checklist.length ? (
+            <section className="mt-6 overflow-hidden rounded-3xl bg-gradient-to-r from-lime-50 via-white to-emerald-50 p-5 ring-1 ring-lime-100 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h4 className="m-0 font-serif text-xl font-bold text-neutral-900">Set up your store</h4>
+                  <p className="m-0 mt-0.5 text-sm text-neutral-500">{checklistDone} of {checklist.length} steps done</p>
+                </div>
+                <div className="h-2.5 w-full max-w-[220px] overflow-hidden rounded-full bg-lime-100" role="progressbar" aria-valuemin={0} aria-valuemax={checklist.length} aria-valuenow={checklistDone}>
+                  <div className="h-full rounded-full bg-gradient-to-r from-lime-500 to-emerald-600 transition-all duration-500" style={{ width: `${(checklistDone / checklist.length) * 100}%` }} />
+                </div>
+              </div>
+              <ul className="m-0 mt-4 grid list-none gap-2.5 p-0 sm:grid-cols-2 lg:grid-cols-4">
+                {checklist.map((item) => (
+                  <li key={item.label} className={`flex items-center gap-3 rounded-xl p-3 text-sm font-semibold ring-1 ${item.done ? 'bg-white text-neutral-500 ring-lime-100' : 'bg-white text-neutral-900 ring-neutral-200'}`}>
+                    <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${item.done ? 'bg-lime-500 text-white' : 'border-2 border-dashed border-neutral-300 text-transparent'}`}>
+                      <Ico d={ICON.check} className="h-3.5 w-3.5" stroke={3} />
+                    </span>
+                    <span className={item.done ? 'line-through decoration-neutral-300' : ''}>{item.label}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {/* products */}
+          <Card
+            icon="package"
+            title="Products"
+            hint={products.length ? `Showing ${Math.min(products.length, 12)} of ${products.length}` : undefined}
+            action={
+              products.length ? (
+                <button type="button" onClick={openAddForm} className={primaryButtonClasses}>
+                  <Ico d={ICON.plus} className="h-4 w-4" stroke={2.5} /> Add product
+                </button>
+              ) : null
+            }
+          >
+            {products.length === 0 ? (
+              <EmptyState
+                icon="package"
+                title="Your catalog is empty"
+                text="Add your first product with a photo and price so customers can start ordering."
+                action={
+                  <button type="button" onClick={openAddForm} className={primaryButtonClasses}>
+                    <Ico d={ICON.plus} className="h-4 w-4" stroke={2.5} /> Add your first product
+                  </button>
+                }
+              />
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {products.slice(0, 12).map((product) => (
+                    <article key={product.id} className="group min-w-0 overflow-hidden rounded-2xl bg-white ring-1 ring-neutral-200 transition hover:shadow-lg hover:shadow-lime-900/10 hover:ring-lime-300">
+                      <div className="relative grid aspect-[4/3] place-items-center overflow-hidden bg-gradient-to-br from-lime-50 to-emerald-50">
+                        {product.mainImageUrl ? (
+                          <img src={product.mainImageUrl} alt={product.name} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                        ) : (
+                          <Ico d={ICON.image} className="h-10 w-10 text-lime-400" stroke={1.5} />
+                        )}
+                        <span className="absolute right-3 top-3"><StatusBadge status={product.stockStatus || 'instock'} /></span>
+                      </div>
+                      <div className="p-4">
+                        <p className="m-0 truncate font-bold text-neutral-900">{product.name}</p>
+                        <p className="m-0 mt-0.5 truncate text-xs text-neutral-500">{[product.brand, product.sku].filter(Boolean).join(' • ') || 'No brand or SKU'}</p>
+                        <div className="mt-3 flex items-end justify-between gap-2">
+                          <p className="m-0 text-xl font-extrabold text-lime-700">Rs. {product.price}</p>
+                          {product.stockQuantity !== undefined && product.stockQuantity !== null ? (
+                            <p className="m-0 text-xs font-semibold text-neutral-500">{product.stockQuantity} in stock</p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+                {products.length > 12 ? (
+                  <div className="mt-5 flex justify-center">
+                    <NavLink to="/partner/vendor/inventory" className={outlineButtonClasses}>View all {products.length} products</NavLink>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </Card>
+
+          {/* active orders */}
+          <Card icon="cart" title="Active orders" hint={activeOrders.length ? `${activeOrders.length} waiting for you` : undefined}>
+            {activeOrders.length === 0 ? (
+              <EmptyState icon="inbox" title="No active orders" text="New orders will show up here the moment a customer places one." />
+            ) : (
+              <div className="grid gap-2.5">
+                {activeOrders.slice(0, 10).map((order) => (
+                  <div key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-100 transition hover:ring-lime-200">
+                    <div className="flex items-center gap-3">
+                      <span className="grid h-11 w-11 place-items-center rounded-xl bg-white text-lime-600 ring-1 ring-neutral-100"><Ico d={ICON.cart} className="h-5 w-5" /></span>
+                      <div>
+                        <p className="m-0 font-bold text-neutral-900">Order #{order.id}</p>
+                        <p className="m-0 text-sm font-semibold text-lime-700">Rs. {order.total}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <StatusBadge status={order.status || 'pending'} />
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => updateVendorOrder(order.id, order.status === 'pending' ? 'processing' : 'completed')}
+                        className={primaryButtonClasses}
+                      >
+                        {order.status === 'pending' ? 'Start processing' : 'Mark completed'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          {/* add product drawer */}
           {showAddForm ? (
-            <div id="add-product-card">
-              <Card icon="plus" title="Add a product" hint="Fields marked * are required">
-                <form className="grid gap-4" onSubmit={createProduct}>
+            <div className="fixed inset-0 z-[100] flex justify-end" role="dialog" aria-modal="true" aria-label="Add a product">
+              <button type="button" aria-label="Close add product form" onClick={() => setShowAddForm(false)} className="absolute inset-0 cursor-default bg-emerald-950/50 backdrop-blur-sm" />
+              <form onSubmit={createProduct} className="relative flex h-full w-full max-w-2xl flex-col bg-white shadow-2xl">
+                <header className="flex items-center justify-between gap-3 border-b border-neutral-100 bg-gradient-to-r from-lime-50 to-white px-5 py-4 sm:px-6">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-lime-400 to-lime-600 text-white shadow-md shadow-lime-500/30">
+                      <Ico d={ICON.plus} className="h-5 w-5" stroke={2.5} />
+                    </span>
+                    <div>
+                      <h3 className="m-0 font-serif text-xl font-bold text-neutral-900">Add a product</h3>
+                      <p className="m-0 text-xs text-neutral-500">Fields marked * are required</p>
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => setShowAddForm(false)} aria-label="Close" className="grid h-10 w-10 place-items-center rounded-xl text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-900">
+                    <Ico d={ICON.close} className="h-5 w-5" />
+                  </button>
+                </header>
+
+                <div className="grid flex-1 content-start gap-4 overflow-y-auto px-5 py-5 sm:px-6">
+                  {formError ? (
+                    <p role="alert" className="m-0 flex items-start gap-2.5 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-200">
+                      <Ico d={ICON.alert} className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span className="min-w-0 break-words">{formError}</span>
+                    </p>
+                  ) : null}
+
                   <FormGroup title="Basic info" icon="tag">
-                    <Field label="Product name" required><input required placeholder="Product name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={inputClasses} /></Field>
+                    <Field label="Product name" required full><input required placeholder="Product name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={inputClasses} /></Field>
                     <Field label="SKU"><input placeholder="SKU" value={form.sku} onChange={(event) => setForm({ ...form, sku: event.target.value })} className={inputClasses} /></Field>
                     <Field label="Brand"><input placeholder="Brand" value={form.brand} onChange={(event) => setForm({ ...form, brand: event.target.value })} className={inputClasses} /></Field>
-                    <Field label="Category ID"><input type="number" placeholder="Category ID" value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value })} className={inputClasses} /></Field>
+                    <Field label="Category ID" full><input type="number" placeholder="Category ID" value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value })} className={inputClasses} /></Field>
                   </FormGroup>
 
                   <FormGroup title="Pricing & stock" icon="rupee">
@@ -422,7 +621,7 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
                     </div>
                   </FormGroup>
 
-                  <details className="group rounded-2xl border border-neutral-100 bg-neutral-50/50 p-4 sm:p-5">
+                  <details className="group rounded-2xl border border-neutral-100 bg-neutral-50/60 p-4 sm:p-5">
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-bold text-neutral-800 [&::-webkit-details-marker]:hidden">
                       <span className="flex items-center gap-2">
                         <span className="grid h-6 w-6 place-items-center rounded-lg bg-lime-100 text-lime-700"><Ico d={ICON.code} className="h-3.5 w-3.5" /></span>
@@ -435,85 +634,25 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
                       <Field label="Variations (JSON array)"><textarea placeholder='Variations (JSON array, e.g. [{"sku":"P-RED-M","price":499}])' value={form.variations} onChange={(event) => setForm({ ...form, variations: event.target.value })} className={`${textareaClasses} min-h-[90px]`} /></Field>
                     </div>
                   </details>
+                </div>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <button type="button" onClick={() => setShowAddForm(false)} className={outlineButtonClasses}>
-                      Cancel
-                    </button>
-                    <button type="submit" disabled={busy} className={`${primaryButtonClasses} py-3.5`}>
-                      <Ico d={ICON.plus} className="h-4 w-4" stroke={2.5} />
-                      Add product
-                    </button>
-                  </div>
-                </form>
-              </Card>
+                <footer className="grid grid-cols-2 gap-3 border-t border-neutral-100 bg-white px-5 py-4 sm:px-6">
+                  <button type="button" onClick={() => setShowAddForm(false)} className={outlineButtonClasses}>
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={busy} className={primaryButtonClasses}>
+                    <Ico d={ICON.plus} className="h-4 w-4" stroke={2.5} />
+                    {busy ? 'Adding…' : 'Add product'}
+                  </button>
+                </footer>
+              </form>
             </div>
           ) : null}
-
-          {/* products */}
-          <Card icon="package" title="Products" hint={products.length ? `Showing ${Math.min(products.length, 10)} of ${products.length}` : undefined}>
-            {products.length === 0 ? (
-              <>
-                <EmptyState icon="package" text="No products yet." />
-                {!showAddForm ? (
-                  <div className="mt-4 flex justify-center">
-                    <button type="button" onClick={toggleAddForm} className={primaryButtonClasses}>
-                      <Ico d={ICON.plus} className="h-4 w-4" stroke={2.5} /> Add your first product
-                    </button>
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <div className="grid gap-2.5">
-                {products.slice(0, 10).map((product) => (
-                  <div key={product.id} className="flex items-center justify-between gap-3 rounded-2xl bg-neutral-50 p-3.5 ring-1 ring-neutral-100 transition hover:bg-lime-50/50 hover:ring-lime-200">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-lime-600 ring-1 ring-neutral-100"><Ico d={ICON.package} className="h-5 w-5" /></span>
-                      <div className="min-w-0">
-                        <p className="m-0 truncate font-bold text-neutral-900">{product.name}</p>
-                        <p className="m-0 text-sm font-semibold text-lime-700">Rs. {product.price}</p>
-                      </div>
-                    </div>
-                    <StatusBadge status={product.stockStatus || 'instock'} />
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-
-          {/* active orders */}
-          <Card icon="cart" title="Active orders">
-            {activeOrders.length === 0 ? (
-              <EmptyState icon="inbox" text="No active orders right now." />
-            ) : (
-              <div className="grid gap-2.5">
-                {activeOrders.slice(0, 10).map((order) => (
-                  <div key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-neutral-50 p-3.5 ring-1 ring-neutral-100">
-                    <div>
-                      <p className="m-0 font-bold text-neutral-900">Order #{order.id}</p>
-                      <p className="m-0 text-sm font-semibold text-lime-700">Rs. {order.total}</p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <StatusBadge status={order.status || 'pending'} />
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => updateVendorOrder(order.id, order.status === 'pending' ? 'processing' : 'completed')}
-                        className={primaryButtonClasses}
-                      >
-                        {order.status === 'pending' ? 'Start processing' : 'Mark completed'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
         </>
       ) : (
-        <Card icon="truck" title="Delivery orders">
+        <Card icon="truck" title="Delivery orders" hint={orders.length ? `${activeOrders.length} active` : undefined}>
           {orders.length === 0 ? (
-            <EmptyState icon="truck" text="No deliveries have been assigned yet." />
+            <EmptyState icon="truck" title="No deliveries yet" text="Assigned deliveries will appear here with their live status." />
           ) : (
             <div className="grid gap-4">
               {orders.slice(0, 15).map((order) => {
