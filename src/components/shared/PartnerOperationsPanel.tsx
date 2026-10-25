@@ -615,7 +615,7 @@ const PartnerOperationsPanel = ({ role, user }: { role: PartnerRole; user: User 
                     <Field label="Short description" full><input placeholder="Short description" value={form.shortDescription} onChange={(event) => setForm({ ...form, shortDescription: event.target.value })} className={inputClasses} /></Field>
                     <div className="min-w-0 sm:col-span-2">
                       <span className="mb-1.5 block text-sm font-semibold text-neutral-700">Full description</span>
-                      <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white transition focus-within:border-lime-500 focus-within:ring-4 focus-within:ring-lime-500/15 [&_.ck-editor__editable]:!min-h-[180px] [&_.ck-editor__editable]:!border-0 [&_.ck-editor__editable.ck-focused]:!shadow-none [&_.ck-toolbar]:!border-0 [&_.ck-toolbar]:!border-b [&_.ck-toolbar]:!bg-neutral-50">
+                      <div className="relative z-0 rounded-xl border border-neutral-200 bg-white transition focus-within:z-20 focus-within:border-lime-500 focus-within:ring-4 focus-within:ring-lime-500/15 [&_.ck-editor__editable]:!min-h-[180px] [&_.ck-editor__editable]:!rounded-b-xl [&_.ck-editor__editable]:!border-0 [&_.ck-editor__editable.ck-focused]:!shadow-none [&_.ck-toolbar]:!rounded-t-xl [&_.ck-toolbar]:!border-0 [&_.ck-toolbar]:!border-b [&_.ck-toolbar]:!bg-neutral-50">
                         <CKEditor editor={ClassicEditor} data={form.description} onChange={(_, editor) => setForm({ ...form, description: editor.getData() })} />
                       </div>
                     </div>

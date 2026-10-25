@@ -45,21 +45,6 @@ const getInitials = (name: string) =>
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'U';
 
-const getShopDescription = (profile: Record<string, unknown>) => {
-  const description = profile.shopDescription;
-  if (typeof description === 'string' && description.trim()) return description;
-
-  const legacyProfile = profile.profile;
-  if (typeof legacyProfile !== 'string' || !legacyProfile.trim()) return '';
-  try {
-    const parsed = JSON.parse(legacyProfile);
-    if (parsed && typeof parsed === 'object') return '';
-  } catch {
-    // Older vendor profiles stored the shop description as plain text.
-  }
-  return legacyProfile;
-};
-
 const availabilityOptions = [
   { value: 'offline', label: 'Offline' },
   { value: 'online', label: 'Online' },
@@ -309,8 +294,8 @@ export default function PartnerProfilePage({ user, role, onUserUpdated }: { user
               </Section>
 
               <Section icon={FileText} title="About your shop" hint="Tell customers what makes your store special">
-                <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white transition focus-within:border-lime-500 focus-within:ring-4 focus-within:ring-lime-500/15 [&_.ck-editor__editable]:!min-h-[160px] [&_.ck-editor__editable]:!border-0 [&_.ck-editor__editable.ck-focused]:!shadow-none [&_.ck-toolbar]:!border-0 [&_.ck-toolbar]:!border-b [&_.ck-toolbar]:!bg-neutral-50">
-                  <CKEditor editor={ClassicEditor} data={getShopDescription(profile)} onChange={(_, editor) => change('shopDescription', editor.getData())} />
+                <div className="relative z-0 rounded-xl border border-neutral-200 bg-white transition focus-within:z-20 focus-within:border-lime-500 focus-within:ring-4 focus-within:ring-lime-500/15 [&_.ck-editor__editable]:!min-h-[160px] [&_.ck-editor__editable]:!rounded-b-xl [&_.ck-editor__editable]:!border-0 [&_.ck-editor__editable.ck-focused]:!shadow-none [&_.ck-toolbar]:!rounded-t-xl [&_.ck-toolbar]:!border-0 [&_.ck-toolbar]:!border-b [&_.ck-toolbar]:!bg-neutral-50">
+                  <CKEditor editor={ClassicEditor} data={profile.shopDescription || profile.profile || ''} onChange={(_, editor) => change('shopDescription', editor.getData())} />
                 </div>
               </Section>
 
