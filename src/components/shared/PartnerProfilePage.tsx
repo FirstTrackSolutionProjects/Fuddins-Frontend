@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   KeyRound,
   Mail,
+  LogOut,
   MapPin,
   Save,
   ShieldCheck,
@@ -134,7 +135,7 @@ const strengthMeta = [
   { label: 'Strong', bar: 'bg-emerald-600', text: 'text-emerald-700' },
 ];
 
-export default function PartnerProfilePage({ user, role, onUserUpdated }: { user: User; role: 'vendor' | 'delivery'; onUserUpdated: (user: User) => void }) {
+export default function PartnerProfilePage({ user, role, onUserUpdated, onLogout }: { user: User; role: 'vendor' | 'delivery'; onUserUpdated: (user: User) => void; onLogout: () => void }) {
   const [profile, setProfile] = useState<Record<string, any>>({ name: user.name, phone: user.phone || '', storeName: user.name, acceptingOrders: true, vehicleType: '', vehicleNumber: '', deliveryStatus: 'offline' });
   const [notice, setNotice] = useState<{ text: string; tone: 'success' | 'error' } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -238,11 +239,15 @@ export default function PartnerProfilePage({ user, role, onUserUpdated }: { user
         <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-24 left-1/4 h-56 w-56 rounded-full bg-emerald-300/20 blur-3xl" />
 
-        <div className="relative">
+        <div className="relative flex flex-wrap items-center justify-between gap-3">
           <NavLink to={`/partner/${role}/dashboard`} className={heroGhost}>
             <ArrowLeft size={16} />
             Back to dashboard
           </NavLink>
+          <button type="button" onClick={onLogout} className={heroGhost}>
+            <LogOut size={16} />
+            Logout
+          </button>
         </div>
 
         <div className="relative mt-5 flex flex-wrap items-center gap-4">
