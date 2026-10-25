@@ -19,12 +19,14 @@ import {
   ShoppingBag,
   Store,
   User as UserIcon,
+  Wallet,
   X,
   type LucideIcon,
 } from 'lucide-react';
 import { API_ORIGIN } from '../../config';
 import type { User } from '../../types';
 import PasswordInput from './PasswordInput';
+import AccountCommercePanel from '../customer/AccountCommercePanel';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
@@ -326,6 +328,10 @@ export default function PartnerProfilePage({ user, role, onUserUpdated }: { user
                     <Toggle checked={Boolean(profile.acceptingOrders)} onChange={(value) => change('acceptingOrders', value)} label="Accept new orders" />
                   </div>
                 </div>
+              </Section>
+
+              <Section icon={Wallet} title="Wallet & rewards" hint="Your wallet balance and reward points">
+                <AccountCommercePanel user={user} />
               </Section>
             </>
           ) : (
