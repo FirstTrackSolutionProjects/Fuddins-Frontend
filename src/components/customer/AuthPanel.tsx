@@ -54,6 +54,7 @@ const ICONS = {
   truck: 'M1 3h15v13H1z M16 8h4l3 3v5h-7z M5.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z M18.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
   logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9',
   alert: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 8v4 M12 16h.01',
+  dash: 'M3 3h7v9H3z M14 3h7v5h-7z M14 12h7v9h-7z M3 16h7v5H3z',
 } as const;
 
 const isErrorText = (text: string) => /fail|unable|invalid|error|enter |wrong|expired|partner account|incorrect/i.test(text);
@@ -195,7 +196,7 @@ const AuthPanel = ({ currentUser, allowedRoles = [], onAuthenticated, onLogout }
   if (currentUser) {
     const initial = (currentUser.name || currentUser.email || '?').trim().charAt(0).toUpperCase();
     return (
-      <section className="min-w-0 overflow-x-hidden bg-gradient-to-b from-lime-50 via-white to-white px-4 py-10 sm:py-16">
+      <section className="min-w-0 py-2">
         <div className="mx-auto w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl shadow-neutral-900/10 ring-1 ring-neutral-100">
           <div className="relative bg-gradient-to-br from-lime-500 via-lime-500 to-lime-700 px-6 pb-14 pt-8">
             <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
@@ -208,14 +209,27 @@ const AuthPanel = ({ currentUser, allowedRoles = [], onAuthenticated, onLogout }
             </div>
             <p className="mt-4 break-words text-xl font-bold text-neutral-900">{currentUser.name}</p>
             <p className="mt-0.5 break-all text-sm text-neutral-500">{currentUser.email}</p>
-            <span className="mt-3 inline-block rounded-full bg-lime-100 px-3 py-1 text-xs font-bold capitalize text-lime-800">{currentUser.role}</span>
+            <span className="mt-3 inline-block rounded-full bg-lime-100 px-3 py-1 text-xs font-bold capitalize text-lime-800">{String(currentUser.role).replace(/_/g, ' ')}</span>
 
             <div className="mt-7 grid gap-3">
               {currentUser.role === 'user' ? (
                 <Link to="/account/orders" className={`${outlineButton} flex items-center justify-center gap-2`}>
                   <Ico d={ICONS.bag} className="h-5 w-5" /> My Orders
                 </Link>
-              ) : null}
+              ) : (
+                <Link
+                  to={
+                    currentUser.role === 'admin' || currentUser.role === 'admin_team'
+                      ? '/admin'
+                      : currentUser.role === 'delivery'
+                        ? '/partner/delivery/dashboard'
+                        : '/partner/vendor/dashboard'
+                  }
+                  className={`${primaryButton} flex items-center justify-center gap-2 no-underline`}
+                >
+                  <Ico d={ICONS.dash} className="h-5 w-5" /> Go to dashboard
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={onLogout}
