@@ -100,6 +100,22 @@ const ImagePreview = ({ src, alt, className, fallback }: { src?: string; alt: st
   return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />;
 };
 
+// The backend's `profile` field can hold the vendor's registration data (plan, GST, documents...) as a JSON string.
+// That is not a shop description, so never show it in the editor.
+const readableDescription = (value: unknown) => {
+  if (typeof value !== 'string' || !value.trim()) return '';
+  const text = value.trim();
+  if (text.startsWith('{') || text.startsWith('[')) {
+    try {
+      JSON.parse(text);
+      return '';
+    } catch {
+      /* not JSON, treat as a normal description */
+    }
+  }
+  return value;
+};
+
 const passwordScore = (value: string) => {
   let score = 0;
   if (value.length >= 8) score += 1;
@@ -295,7 +311,7 @@ export default function PartnerProfilePage({ user, role, onUserUpdated }: { user
 
               <Section icon={FileText} title="About your shop" hint="Tell customers what makes your store special">
                 <div className="relative z-0 rounded-xl border border-neutral-200 bg-white transition focus-within:z-20 focus-within:border-lime-500 focus-within:ring-4 focus-within:ring-lime-500/15 [&_.ck-editor__editable]:!min-h-[160px] [&_.ck-editor__editable]:!rounded-b-xl [&_.ck-editor__editable]:!border-0 [&_.ck-editor__editable.ck-focused]:!shadow-none [&_.ck-toolbar]:!rounded-t-xl [&_.ck-toolbar]:!border-0 [&_.ck-toolbar]:!border-b [&_.ck-toolbar]:!bg-neutral-50">
-                  <CKEditor editor={ClassicEditor} data={profile.shopDescription || profile.profile || ''} onChange={(_, editor) => change('shopDescription', editor.getData())} />
+                  <CKEditor editor={ClassicEditor} data={readableDescription(profile.shopDescription) || readableDescription(profile.profile)} onChange={(_, editor) => change('shopDescription', editor.getData())} />
                 </div>
               </Section>
 
